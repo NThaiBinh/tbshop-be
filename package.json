@@ -1,0 +1,32 @@
+{
+  "name": "tbshop",
+  "version": "1.0.0",
+  "description": "Ban do cong nghe",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon ./src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NThaiBinh/tbshop.git"
+  },
+  "author": "Thai Binh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NThaiBinh/tbshop/issues"
+  },
+  "homepage": "https://github.com/NThaiBinh/tbshop#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}

@@ -1,0 +1,21 @@
+const express = require('express')
+const apiRouter = express.Router()
+const authentication = require('../middleware/authentication')
+const categoryRouter = require('./categoryRouter')
+const manufacturerRouter = require('./manufacturerRouter')
+const productRouter = require('./productRouter')
+const employeesRouter = require('./employeesRouter')
+const customerRouter = require('./customerRouter')
+const positionRouter = require('./positionRouter')
+const storeInfoRouter = require('./storeInfoRouter')
+
+apiRouter.use('*', authentication)
+apiRouter.use('/categories', categoryRouter)
+apiRouter.use('/positions', positionRouter)
+apiRouter.use('/manufacturers', manufacturerRouter)
+apiRouter.use('/products', productRouter)
+apiRouter.use('/employees', employeesRouter)
+apiRouter.use('/customers', customerRouter)
+apiRouter.use('/store-info', storeInfoRouter)
+
+module.exports = apiRouter
