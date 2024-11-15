@@ -1,20 +1,28 @@
+const { createProductConfiguration } = require('../models/productConfigurations')
 const {
    getAllProducts,
    getAllProductByCategory,
+   getAllInfoProducts,
    createProduct,
+   getProductInfoWidthoutConfig,
    getProductById,
    updateProduct,
    deleteProduct,
+   getProductDetails,
 } = require('../models/products')
+const { setNullFieldEmty } = require('../utils/lib')
 
-//-----GET ALL-----
 async function getAllProductHandler(req, res) {
    try {
       const page = req.query.page
-      const products = await getAllProducts(page)
-      return res.status(200).json(products)
+      const products = await getAllInfoProducts(page)
+      return res.status(200).json({
+         code: 'SS',
+         data: products,
+      })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -23,87 +31,172 @@ async function getAllProductHandler(req, res) {
 
 async function getAllProductByCategoryHandler(req, res) {
    const categoryId = req.params.categoryId
-   console.log(categoryId)
-   if (categoryId) {
-      const products = await getAllProductByCategory(categoryId)
-      try {
-         return res.status(200).json(products)
-      } catch (err) {
-         return res.status(500).json({
-            message: 'Server error',
-            err,
-         })
-      }
-   } else {
+   if (!categoryId) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Missing data',
+      })
+   }
+   try {
+      const products = await getAllProductByCategory(categoryId)
+      return res.status(200).json({
+         code: 'SS',
+         data: products,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
       })
    }
 }
 
-//-----CREATE-----
 async function createProductHandler(req, res) {
-   const { categoryId, manufacId, name, description, quantity } = req.body
-   if (!categoryId || !manufacId || !name || !description || !quantity) {
+   const productImages = req.files
+   const productInfo = setNullFieldEmty(JSON.parse(req.body.productInfo))
+   const productConfiguration = setNullFieldEmty(JSON.parse(req.body.productConfiguration))
+   const { categoryId, manufacId, productTypeId, name, quantity, price } = productInfo
+   const {} = productConfiguration
+
+   if (!categoryId || !manufacId || !productTypeId || !name || !quantity || !price || !productImages) {
       return res.status(400).json({
+         code: 'ER',
          mesage: 'Missing data',
       })
    }
 
+   await createProduct({ productImages, productInfo, productConfiguration })
    try {
-      await createProduct(req.body)
       return res.status(200).json({
+         code: 'SS',
          mesage: 'Create successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
    }
 }
 
-async function editProduct(req, res) {
+async function createProductConfigurationHandler(req, res) {
    const productId = req.params.productId
-   if (!productId) {
+   const productConfiguration = setNullFieldEmty(req.body.productConfiguration)
+   if (productId) {
+      try {
+         await createProductConfiguration(productConfiguration, productId)
+         return res.status(200).json({
+            code: 'SS',
+            mesage: 'Create successfully',
+         })
+      } catch (err) {
+         return res.status(500).json({
+            code: 'ER',
+            message: 'Server error',
+            err,
+         })
+      }
+   }
+}
+
+async function editProduct(req, res) {
+   const productId = req.query.productId
+   const productConfigurationId = req.query.productConfigurationId
+   if (!productId || !productConfigurationId) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
 
    try {
-      const product = await getProductById(productId)
-      if (!product) {
+      const productDetails = await getProductDetails(productId, productConfigurationId)
+      if (!productDetails) {
          return res.status(200).json({
+            code: 'NF',
             message: 'Product not found',
          })
       }
-      return res.status(200).json(product)
+      return res.status(200).json({
+         code: 'SS',
+         data: productDetails,
+      })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
    }
 }
 
-//-----UPDATE-----
-async function updateProductHandler(req, res) {
+async function editProductWidthoutConfig(req, res) {
    const productId = req.params.productId
-   const { categoryId, manufacId, name, description, quantity } = req.body
-   if (!productId || !categoryId || !manufacId || !name || !description || !quantity) {
+   if (!productId) {
       return res.status(400).json({
+         code: 'ER',
+         message: 'Missing data',
+      })
+   }
+
+   const productInfo = await getProductInfoWidthoutConfig(productId)
+   try {
+      if (!productInfo) {
+         return res.status(200).json({
+            code: 'NF',
+            message: 'Product not found',
+         })
+      }
+      return res.status(200).json({
+         code: 'SS',
+         data: productInfo,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+async function updateProductHandler(req, res) {
+   const productImages = req.files
+   const productInfo = setNullFieldEmty(JSON.parse(req.body.productInfo))
+   const productConfiguration = setNullFieldEmty(JSON.parse(req.body.productConfiguration))
+   const { categoryId, manufacId, productTypeId, name, quantity, price } = productInfo
+   const {} = productConfiguration
+   const productId = req.query.productId
+   const productConfigurationId = req.query.productConfigurationId
+
+   if (
+      !productId ||
+      !productConfigurationId ||
+      !categoryId ||
+      !manufacId ||
+      !productTypeId ||
+      !name ||
+      !quantity ||
+      !price ||
+      !productImages
+   ) {
+      return res.status(400).json({
+         code: 'ER',
          mesage: 'Missing data',
       })
    }
 
    try {
-      await updateProduct({ productId, ...req.body })
+      await updateProduct(productId, productImages, productInfo, productConfigurationId, productConfiguration)
       return res.status(200).json({
+         code: 'SS',
          message: 'Update successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -114,6 +207,7 @@ async function deleteProductHandler(req, res) {
    const productId = req.params.productId
    if (!productId) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
@@ -121,10 +215,12 @@ async function deleteProductHandler(req, res) {
    try {
       await deleteProduct(productId)
       return res.status(200).json({
+         code: 'SS',
          mesage: 'Delete successfully',
       })
    } catch (err) {
       return res.status(502).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -135,7 +231,9 @@ module.exports = {
    getAllProductHandler,
    getAllProductByCategoryHandler,
    createProductHandler,
+   createProductConfigurationHandler,
    editProduct,
+   editProductWidthoutConfig,
    updateProductHandler,
    deleteProductHandler,
 }

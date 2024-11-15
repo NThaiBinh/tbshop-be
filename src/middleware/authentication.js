@@ -1,8 +1,17 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
+const { pathToRegexp } = require('path-to-regexp')
+
+function checkWhiteLists(url) {
+   const whiteLists = ['customers/login', 'customers/register', 'products', 'products/edit/:productId']
+   return whiteLists.find((item) => {
+      const regex = pathToRegexp('/api/v1/' + item)
+      return regex.regexp.test(url)
+   })
+}
+
 function authentication(req, res, next) {
-   const whiteLists = ['customers/login', 'customers/register', 'categories', 'products']
-   if (whiteLists.find((item) => '/api/v1/' + item === req.originalUrl)) {
+   if (checkWhiteLists(req.baseUrl)) {
       next()
    } else {
       const token = req.cookies.token
@@ -12,11 +21,13 @@ function authentication(req, res, next) {
             next()
          } else {
             return res.status(401).json({
+               code: 'UN',
                message: 'Unauthorized',
             })
          }
       } else {
          return res.status(401).json({
+            code: 'UN',
             message: 'Unauthorized',
          })
       }

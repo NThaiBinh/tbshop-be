@@ -1,5 +1,6 @@
 const sql = require('mssql')
 const connectionPool = require('../config/dbConfig')
+
 const {
    getManufacById,
    getManufacByEmail,
@@ -9,13 +10,17 @@ const {
    deleteManufac,
 } = require('../models/manufacturers')
 
-async function getAllManufacHandler(req, res) {
+async function getAllManufacsHandler(req, res) {
    try {
       const page = req.query.page
       const manufacs = await getAllManufacs(page)
-      return res.status(200).json(manufacs)
+      return res.status(200).json({
+         code: 'SS',
+         data: manufacs,
+      })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -26,6 +31,7 @@ async function createManufacHandler(req, res) {
    const { name, address, phoneNumber, email } = req.body
    if (!name || !address || !phoneNumber || !email) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
@@ -34,16 +40,19 @@ async function createManufacHandler(req, res) {
       const customer = await getManufacByEmail(email)
       if (customer && customer.EMAILKH !== email) {
          return res.status(409).json({
+            code: 'EX',
             message: 'Manufac already exits',
          })
       }
 
-      await createManufac(req.body)
+      await createManufac({ ...req.body, fileName: req.file.filename })
       return res.status(200).json({
+         code: 'SS',
          mesage: 'Create successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -54,6 +63,7 @@ async function editManufacHandler(req, res) {
    const manufacId = req.params.manufacId
    if (!manufacId) {
       return res.status(400).json({
+         code: 'ER',
          meaagse: 'Missing data',
       })
    }
@@ -62,12 +72,14 @@ async function editManufacHandler(req, res) {
       const manufac = await getManufacById(manufacId)
       if (!manufac) {
          return res.status(200).json({
+            code: 'NF',
             meaasge: 'Manufacturer not found',
          })
       }
       return res.status(200).json(manufac)
    } catch (err) {
-      return res.status(200).json({
+      return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -79,24 +91,28 @@ async function updateManufacHandler(req, res) {
    const { name, address, phoneNumber, email } = req.body
    if ((!manufacId, !name || !address || !phoneNumber || !email)) {
       return res.status(400).json({
+         code: 'ER',
          meaagse: 'Missing data',
       })
    }
 
-   try {
-      const customer = await getManufacByEmail(email)
-      if (customer && customer.EMAILNSX !== email) {
-         return res.status(409).json({
-            message: 'Manufac already exits',
-         })
-      }
+   const customer = await getManufacByEmail(email)
+   if (customer && customer.EMAILNSX !== email) {
+      return res.status(409).json({
+         code: 'EX',
+         message: 'Manufac already exits',
+      })
+   }
 
-      await updateManufac({ manufacId, ...req.body })
+   await updateManufac({ manufacId, ...req.body, image: req.body.image ? req.body.image : req.file?.filename })
+   try {
       return res.status(200).json({
+         code: 'SS',
          meaasge: 'Update successfully',
       })
    } catch (err) {
       return res.status(200).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -107,16 +123,19 @@ async function deleteManufacHandler(req, res) {
    const manufacId = req.params.manufacId
    if (!manufacId) {
       return res.status(400).json({
+         code: 'ER',
          meaagse: 'Missing data',
       })
    }
    try {
       await deleteManufac(manufacId)
       return res.status(200).json({
+         code: 'SS',
          meaasge: 'Delete successfully',
       })
    } catch (err) {
       return res.status(200).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -124,7 +143,7 @@ async function deleteManufacHandler(req, res) {
 }
 
 module.exports = {
-   getAllManufacHandler,
+   getAllManufacsHandler,
    createManufacHandler,
    editManufacHandler,
    updateManufacHandler,

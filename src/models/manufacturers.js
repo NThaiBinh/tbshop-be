@@ -1,7 +1,8 @@
 const sql = require('mssql')
 const connectionPool = require('../config/dbConfig')
 const { CreateKey, GetDate } = require('../utils/lib')
-
+const fs = require('fs')
+const path = require('path')
 async function getManufacById(manufacId) {
    return await connectionPool
       .then((pool) => {
@@ -45,8 +46,8 @@ async function getAllManufacs(page) {
 }
 
 async function createManufac(data) {
-   const columns = ['MaNSX', 'TenNSX', 'DiaChiNSX', 'SDTNSX', 'EmailNSX', 'NgayTao', 'NgayCapNhat']
-   const { name, address, phoneNumber, email } = data
+   const columns = ['MaNSX', 'TenNSX', 'DiaChiNSX', 'SDTNSX', 'EmailNSX', 'AnhNSX', 'NgayTao', 'NgayCapNhat']
+   const { name, address, phoneNumber, email, fileName } = data
    const manufacId = CreateKey('NSX_')
    const createAt = GetDate()
    const updateAt = GetDate()
@@ -58,6 +59,7 @@ async function createManufac(data) {
          .input('address', sql.TYPES.NVarChar, address)
          .input('phoneNumber', sql.TYPES.VarChar, phoneNumber)
          .input('email', sql.TYPES.VarChar, email)
+         .input('image', sql.TYPES.VarChar, fileName)
          .input('createAt', sql.TYPES.DateTimeOffset, createAt)
          .input('updateAt', sql.TYPES.DateTimeOffset, updateAt).query(`INSERT INTO NHASANXUAT (${columns}) VALUES (
                     @manufacId,
@@ -65,16 +67,25 @@ async function createManufac(data) {
                     @address,
                     @phoneNumber,
                     @email,
+                    @image,
                     @createAt,
                     @updateAt)`)
    })
 }
 
 async function updateManufac(data) {
-   const columns = ['MaNSX', 'TenNSX', 'DiaChiNSX', 'SDTNSX', 'EmailNSX', 'NgayCapNhat']
-   const { manufacId, name, address, phoneNumber, email } = data
+   const columns = ['MaNSX', 'TenNSX', 'DiaChiNSX', 'SDTNSX', 'EmailNSX', 'AnhNSX', 'NgayCapNhat']
+   const { manufacId, name, address, phoneNumber, email, image } = data
+
    const updateAt = GetDate()
-   console.log(updateAt)
+   const manufacturer = await getManufacById(manufacId)
+
+   fs.unlink(path.join(__dirname, `../public/images/${manufacturer.ANHNSX}`), (err) => {
+      if (err) {
+         console.log('Loi', err)
+      }
+   })
+
    return connectionPool.then((pool) => {
       return pool
          .request()
@@ -83,12 +94,14 @@ async function updateManufac(data) {
          .input('address', sql.TYPES.NVarChar, address)
          .input('phoneNumber', sql.TYPES.VarChar, phoneNumber)
          .input('email', sql.TYPES.VarChar, email)
+         .input('image', sql.TYPES.VarChar, image)
          .input('updateAt', sql.TYPES.DateTimeOffset, updateAt).query(`UPDATE NHASANXUAT SET
                     ${columns[1]} = @name,
                     ${columns[2]} = @address,
                     ${columns[3]} = @phoneNumber,
                     ${columns[4]} = @email,
-                    ${columns[5]} = @updateAt
+                    ${columns[5]} = @image,
+                    ${columns[6]} = @updateAt
                     WHERE ${columns[0]} = @manufacId`)
    })
 }
