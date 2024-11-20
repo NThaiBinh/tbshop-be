@@ -4,7 +4,7 @@ const {
    getCategoryById,
    updateCategory,
    deleteCategory,
-} = require('../models/categories')
+} = require('../services/categoryServices')
 
 //-----GET ALL-----
 async function getAllCategoryHandler(req, res) {

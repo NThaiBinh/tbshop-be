@@ -8,7 +8,7 @@ const {
    createManufac,
    updateManufac,
    deleteManufac,
-} = require('../models/manufacturers')
+} = require('../services/manufacturerServices')
 
 async function getAllManufacsHandler(req, res) {
    try {

@@ -4,7 +4,7 @@ const {
    createProductType,
    updateProductType,
    deleteProductType,
-} = require('../models/productTypes')
+} = require('../services/productTypeServices')
 
 async function getAllProductTypesHandler(req, res) {
    try {

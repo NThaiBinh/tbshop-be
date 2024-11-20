@@ -6,7 +6,7 @@ const {
    getAllCustomers,
    updateCustomer,
    deleteCustomer,
-} = require('../models/customers')
+} = require('../services/customerServices')
 
 async function getAllCustomerHandler(req, res) {
    try {
@@ -29,8 +29,8 @@ async function createCustomerHandler(req, res) {
       })
    }
 
+   const customer = await getCustomerByEmail(email)
    try {
-      const customer = await getCustomerByEmail(email)
       if (customer && customer.EMAILKH !== email) {
          return res.status(409).json({
             message: 'Customer already exits',

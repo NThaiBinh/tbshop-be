@@ -1,4 +1,4 @@
-const { createProductConfiguration } = require('../models/productConfigurations')
+const { createProductConfiguration } = require('../services/productConfigurationServices')
 const {
    getAllProducts,
    getAllProductByCategory,
@@ -9,7 +9,7 @@ const {
    updateProduct,
    deleteProduct,
    getProductDetails,
-} = require('../models/products')
+} = require('../services/productServices')
 const { setNullFieldEmty } = require('../utils/lib')
 
 async function getAllProductHandler(req, res) {
@@ -58,6 +58,7 @@ async function createProductHandler(req, res) {
    const productConfiguration = setNullFieldEmty(JSON.parse(req.body.productConfiguration))
    const { categoryId, manufacId, productTypeId, name, quantity, price } = productInfo
    const {} = productConfiguration
+   const productColors = req.body.productColors
 
    if (!categoryId || !manufacId || !productTypeId || !name || !quantity || !price || !productImages) {
       return res.status(400).json({
@@ -66,8 +67,8 @@ async function createProductHandler(req, res) {
       })
    }
 
-   await createProduct({ productImages, productInfo, productConfiguration })
    try {
+      await createProduct({ productImages, productInfo, productConfiguration, productColors })
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',
@@ -111,8 +112,8 @@ async function editProduct(req, res) {
       })
    }
 
+   const productDetails = await getProductDetails(productId, productConfigurationId)
    try {
-      const productDetails = await getProductDetails(productId, productConfigurationId)
       if (!productDetails) {
          return res.status(200).json({
             code: 'NF',
@@ -168,6 +169,7 @@ async function updateProductHandler(req, res) {
    const productConfiguration = setNullFieldEmty(JSON.parse(req.body.productConfiguration))
    const { categoryId, manufacId, productTypeId, name, quantity, price } = productInfo
    const {} = productConfiguration
+   const productColors = req.body.productColors
    const productId = req.query.productId
    const productConfigurationId = req.query.productConfigurationId
 
@@ -189,7 +191,14 @@ async function updateProductHandler(req, res) {
    }
 
    try {
-      await updateProduct(productId, productImages, productInfo, productConfigurationId, productConfiguration)
+      await updateProduct(
+         productId,
+         productImages,
+         productInfo,
+         productConfigurationId,
+         productConfiguration,
+         productColors,
+      )
       return res.status(200).json({
          code: 'SS',
          message: 'Update successfully',
