@@ -3,16 +3,15 @@ const customerRouter = express.Router()
 const {
    getAllCustomerHandler,
    createCustomerHandler,
-   loginHandler,
    getInfoCustomerHandler,
    editCustomerHandler,
    updateCustomerHandler,
    deleteCustomerHandler,
-} = require('../controllers/CustomerController')
+   customerRegisterHandler,
+} = require('../controllers/customerController')
 
 customerRouter.get('/', getAllCustomerHandler)
-customerRouter.post('/register', createCustomerHandler)
-customerRouter.post('/login', loginHandler)
+customerRouter.post('/create', createCustomerHandler)
 customerRouter.get('/info/:customerId', getInfoCustomerHandler)
 customerRouter.get('/edit/:customerId', editCustomerHandler)
 customerRouter.put('/update/:customerId', updateCustomerHandler)

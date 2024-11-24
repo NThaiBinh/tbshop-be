@@ -1,4 +1,4 @@
-const { getAllEmployees, createEmployee } = require('../services/employeeServices')
+const { getAllEmployees, createEmployee, getEmployeeInfoAndRolesById } = require('../services/employeeServices')
 
 async function getAllEmployeeHandler(req, res) {
    try {
@@ -34,9 +34,35 @@ async function createEmployeeHandler(req, res) {
    }
 }
 
-async function employeeLogin(req, res) {}
+async function editEmployeeHandler(req, res) {
+   const employeeId = req.params.employeeId
+   if (!employeeId) {
+      return res.status(400).json({
+         code: 'ER',
+         meaagse: 'Missing data',
+      })
+   }
 
-async function editEmployeeHandler(req, res) {}
+   const employeeInfo = await getEmployeeInfoAndRolesById(employeeId)
+   try {
+      if (!employeeInfo) {
+         return res.status(404).json({
+            code: 'NF',
+            meaasge: 'Manufacturer not found',
+         })
+      }
+      return res.status(200).json({
+         code: 'SS',
+         data: employeeInfo,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
 
 async function updateEmployeeHandler(req, res) {}
 
@@ -45,7 +71,6 @@ async function deleteEmployeeHandler(req, res) {}
 module.exports = {
    getAllEmployeeHandler,
    createEmployeeHandler,
-   employeeLogin,
    editEmployeeHandler,
    updateEmployeeHandler,
    deleteEmployeeHandler,

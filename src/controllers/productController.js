@@ -1,14 +1,13 @@
 const { createProductConfiguration } = require('../services/productConfigurationServices')
 const {
-   getAllProducts,
    getAllProductByCategory,
    getAllInfoProducts,
    createProduct,
    getProductInfoWidthoutConfig,
-   getProductById,
    updateProduct,
    deleteProduct,
    getProductDetails,
+   getProductDetailsWidthDiscount,
 } = require('../services/productServices')
 const { setNullFieldEmty } = require('../utils/lib')
 
@@ -102,7 +101,7 @@ async function createProductConfigurationHandler(req, res) {
    }
 }
 
-async function editProduct(req, res) {
+async function getProductDetailsHandler(req, res) {
    const productId = req.query.productId
    const productConfigurationId = req.query.productConfigurationId
    if (!productId || !productConfigurationId) {
@@ -112,8 +111,39 @@ async function editProduct(req, res) {
       })
    }
 
-   const productDetails = await getProductDetails(productId, productConfigurationId)
    try {
+      const productDetails = await getProductDetailsWidthDiscount(productId, productConfigurationId)
+      if (!productDetails) {
+         return res.status(200).json({
+            code: 'NF',
+            message: 'Product not found',
+         })
+      }
+      return res.status(200).json({
+         code: 'SS',
+         data: productDetails,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+async function editProductHandler(req, res) {
+   const productId = req.query.productId
+   const productConfigurationId = req.query.productConfigurationId
+   if (!productId || !productConfigurationId) {
+      return res.status(400).json({
+         code: 'ER',
+         message: 'Missing data',
+      })
+   }
+
+   try {
+      const productDetails = await getProductDetails(productId, productConfigurationId)
       if (!productDetails) {
          return res.status(200).json({
             code: 'NF',
@@ -172,7 +202,6 @@ async function updateProductHandler(req, res) {
    const productColors = req.body.productColors
    const productId = req.query.productId
    const productConfigurationId = req.query.productConfigurationId
-
    if (
       !productId ||
       !productConfigurationId ||
@@ -189,7 +218,6 @@ async function updateProductHandler(req, res) {
          mesage: 'Missing data',
       })
    }
-
    try {
       await updateProduct(
          productId,
@@ -239,9 +267,10 @@ async function deleteProductHandler(req, res) {
 module.exports = {
    getAllProductHandler,
    getAllProductByCategoryHandler,
+   getProductDetailsHandler,
    createProductHandler,
    createProductConfigurationHandler,
-   editProduct,
+   editProductHandler,
    editProductWidthoutConfig,
    updateProductHandler,
    deleteProductHandler,

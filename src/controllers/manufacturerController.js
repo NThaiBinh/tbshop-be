@@ -12,8 +12,7 @@ const {
 
 async function getAllManufacsHandler(req, res) {
    try {
-      const page = req.query.page
-      const manufacs = await getAllManufacs(page)
+      const manufacs = await getAllManufacs()
       return res.status(200).json({
          code: 'SS',
          data: manufacs,
@@ -71,12 +70,15 @@ async function editManufacHandler(req, res) {
    try {
       const manufac = await getManufacById(manufacId)
       if (!manufac) {
-         return res.status(200).json({
+         return res.status(404).json({
             code: 'NF',
             meaasge: 'Manufacturer not found',
          })
       }
-      return res.status(200).json(manufac)
+      return res.status(200).json({
+         code: 'SS',
+         data: manufac,
+      })
    } catch (err) {
       return res.status(500).json({
          code: 'ER',
@@ -111,7 +113,7 @@ async function updateManufacHandler(req, res) {
          meaasge: 'Update successfully',
       })
    } catch (err) {
-      return res.status(200).json({
+      return res.status(500).json({
          code: 'ER',
          message: 'Server error',
          err,

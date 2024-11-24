@@ -15,6 +15,7 @@ const {
 } = require('./productConfigurationServices')
 const { createProductPrice, getProductPrice, deleteProductPrice } = require('./productPriceServices')
 const { createProductColor, getProductColors, deleteProductColor } = require('./productColorServices')
+const { calculateProductDiscount } = require('./productDiscountServices')
 
 const columns = ['MASP', 'MADM', 'MANSX', 'MALOAISP', 'TENSP', 'SOLUONGTON', 'NGAYTAO', 'NGAYCAPNHAT']
 
@@ -37,24 +38,94 @@ async function getAllInfoProducts(page) {
          .then((pool) => {
             return pool.request()
                .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
-                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, 
-                  CPU, GPU, RAM, DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT 
+                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM, 
+                  DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
+				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
+					  (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
                   FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP
                   ORDER BY NGAYTAO DESC
                   OFFSET ${skip} ROWS 
                   FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
          })
-         .then((products) => products.recordset)
+         .then((products) =>
+            products.recordset.map((product) => {
+               const productDiscounts = product.DANHSACHKHUYENMAI ? JSON.parse(product.DANHSACHKHUYENMAI) : []
+               const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG
+                  ? JSON.parse(product.DANHSACHKHUYENMAICHUNG)
+                  : []
+               return {
+                  ...product,
+                  DANHSACHKHUYENMAI: productDiscounts,
+                  DANHSACHKHUYENMAICHUNG: storewideDiscounts,
+                  ...calculateProductDiscount(product.GIASP, productDiscounts),
+               }
+            }),
+         )
    }
    return await connectionPool
       .then((pool) => {
          return pool.request()
             .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
-                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, 
-                  CPU, GPU, RAM, DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT 
-                  FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP`)
+                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM, 
+                  DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
+				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
+					  (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
+                  FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP
+                  ORDER BY NGAYTAO DESC`)
       })
-      .then((products) => products.recordset)
+      .then((products) =>
+         products.recordset.map((product) => {
+            const productDiscounts = product.DANHSACHKHUYENMAI ? JSON.parse(product.DANHSACHKHUYENMAI) : []
+            const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.DANHSACHKHUYENMAICHUNG) : []
+            return {
+               ...product,
+               DANHSACHKHUYENMAI: productDiscounts,
+               DANHSACHKHUYENMAICHUNG: storewideDiscounts,
+               ...calculateProductDiscount(product.GIASP, productDiscounts),
+            }
+         }),
+      )
+}
+
+async function getProductDetailsWidthDiscount(productId, productConfigurationId) {
+   const productInfo = await connectionPool
+      .then((pool) => {
+         return pool.request().input('productId', sql.TYPES.VarChar, productId)
+            .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, SOLUONGTON,
+               SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT, (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI, 
+               (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
+               FROM SANPHAM
+               WHERE MaSP = @productId`)
+      })
+      .then((product) => {
+         const productDiscounts = product.recordset[0].DANHSACHKHUYENMAI
+            ? JSON.parse(product.recordset[0].DANHSACHKHUYENMAI)
+            : []
+         const storewideDiscounts = product.recordset[0].DANHSACHKHUYENMAICHUNG
+            ? JSON.parse(product.recordset[0].DANHSACHKHUYENMAICHUNG)
+            : []
+         return {
+            ...product.recordset[0],
+            DANHSACHKHUYENMAI: productDiscounts,
+            DANHSACHKHUYENMAICHUNG: storewideDiscounts,
+            ...calculateProductDiscount(product.recordset[0].GIASP, productDiscounts),
+         }
+      })
+
+   const productImages = await getProductImages(productId)
+   const productColors = await getProductColors(productConfigurationId)
+   const price = await getProductPrice(productId)
+   const productConfiguration = await getProductConfiguration(productConfigurationId)
+   if (price) {
+      return {
+         productImages,
+         productInfo: { ...productInfo, GIASP: price.GIASP },
+         productColors,
+         productConfiguration,
+      }
+   } else {
+      return undefined
+   }
 }
 
 async function getProductDetails(productId, productConfigurationId) {
@@ -63,11 +134,15 @@ async function getProductDetails(productId, productConfigurationId) {
    const productColors = await getProductColors(productConfigurationId)
    const price = await getProductPrice(productId)
    const productConfiguration = await getProductConfiguration(productConfigurationId)
-   return {
-      productImages,
-      productInfo: { ...productInfo, GIASP: price.GIASP },
-      productColors,
-      productConfiguration,
+   if (price) {
+      return {
+         productImages,
+         productInfo: { ...productInfo, GIASP: price.GIASP },
+         productColors,
+         productConfiguration,
+      }
+   } else {
+      return undefined
    }
 }
 
@@ -94,29 +169,6 @@ async function getAllProductByCategory(categoryId) {
             .query(`SELECT * FROM SANPHAM WHERE MaDM = @categoryId`)
       })
       .then((product) => product.recordset)
-}
-
-async function getAllProducts(page) {
-   if (page) {
-      const PAGE_SIZE = 10
-      const skip = (parseInt(page) - 1) * PAGE_SIZE
-      return await connectionPool
-         .then((pool) => {
-            return pool.request().query(`
-               SELECT SANPHAM.MASP, MADM, MANSX, TENSP, MOTASP, GIASP, NGAYCAPNHAT  
-               FROM SANPHAM INNER JOIN GIASP ON SANPHAM.MASP = GIASP.MASP 
-                        ORDER BY MaSP 
-                        OFFSET ${skip} ROWS 
-                        FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
-         })
-         .then((products) => products.recordset)
-   }
-   return await connectionPool
-      .then((pool) => {
-         return pool.request().query(`SELECT SANPHAM.MASP, MADM, MANSX, TENSP, MOTASP, GIASP  
-               FROM SANPHAM INNER JOIN GIASP ON SANPHAM.MASP = GIASP.MASP`)
-      })
-      .then((products) => products.recordset)
 }
 
 async function createProduct({ productImages, productInfo, productConfiguration, productColors }) {
@@ -203,8 +255,8 @@ module.exports = {
    getProductById,
    getAllProductByCategory,
    getProductDetails,
+   getProductDetailsWidthDiscount,
    getProductInfoWidthoutConfig,
-   getAllProducts,
    getAllInfoProducts,
    createProduct,
    updateProduct,

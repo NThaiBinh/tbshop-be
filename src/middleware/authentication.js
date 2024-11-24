@@ -18,6 +18,7 @@ function authentication(req, res, next) {
       if (token) {
          const decoded = jwt.verify(token, process.env.JWT_SECRET)
          if (decoded) {
+            req.user = decoded
             next()
          } else {
             return res.status(401).json({

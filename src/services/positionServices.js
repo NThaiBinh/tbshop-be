@@ -1,6 +1,8 @@
-const connectionPool = require('../config/dbConfig')
 const sql = require('mssql')
-const { CreateKey, GetDate } = require('../utils/lib')
+const connectionPool = require('../config/dbConfig')
+const { CreateKey } = require('../utils/lib')
+
+const columns = ['MACV', 'TENCV']
 
 async function getPositionBtId(positionId) {
    return await connectionPool
@@ -13,19 +15,7 @@ async function getPositionBtId(positionId) {
       .then((position) => position.recordset[0])
 }
 
-async function getAllPositions(page) {
-   if (page) {
-      const PAGE_SIZE = 10
-      const skip = (parseInt(page) - 1) * PAGE_SIZE
-      return await connectionPool
-         .then((pool) => {
-            return pool.request().query(`SELECT * FROM CHUCVU
-                        ORDER BY NgayTao
-                        OFFSET ${skip} ROWS
-                        FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
-         })
-         .then((positions) => positions.recordset)
-   }
+async function getAllPositions() {
    return await connectionPool
       .then((pool) => {
          return pool.request().query(`SELECT * FROM CHUCVU`)
@@ -34,37 +24,23 @@ async function getAllPositions(page) {
 }
 
 async function createPosition(data) {
-   const columns = ['MaCV', 'TenCV', 'NgayTao', 'NgayCapNhat']
    const { name } = data
    const positionId = CreateKey('CV_')
-   const createdAt = GetDate()
-   const updatedAt = GetDate()
-   return await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('positionId', sql.TYPES.VarChar, positionId)
-         .input('name', sql.TYPES.NVarChar, name)
-         .input('createdAt', sql.TYPES.DateTimeOffset, createdAt)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`INSERT INTO CHUCVU (${columns}) VALUES (
+   await connectionPool.then((pool) =>
+      pool.request().input('positionId', sql.TYPES.VarChar, positionId).input('name', sql.TYPES.NVarChar, name)
+         .query(`INSERT INTO CHUCVU (${columns}) VALUES (
                     @positionId,
-                    @name,
-                    @createdAt,
-                    @updatedAt)`)
-   })
+                    @name)`),
+   )
+   return positionId
 }
 
 async function updatePosition(data) {
-   const columns = ['MaCV', 'TenCV', 'NgayCapNhat']
    const { positionId, name } = data
-   const updatedAt = GetDate()
    return await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('positionId', sql.TYPES.VarChar, positionId)
-         .input('name', sql.TYPES.NVarChar, name)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`UPDATE CHUCVU SET
-                    ${columns[1]} = @name,
-                    ${columns[2]} = @updatedAt
+      return pool.request().input('positionId', sql.TYPES.VarChar, positionId).input('name', sql.TYPES.NVarChar, name)
+         .query(`UPDATE CHUCVU SET
+                    ${columns[1]} = @name
                     WHERE ${columns[0]} = @positionId`)
    })
 }

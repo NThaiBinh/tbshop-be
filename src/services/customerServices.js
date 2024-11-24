@@ -1,83 +1,72 @@
 require('dotenv').config()
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
 const connectionPool = require('../config/dbConfig')
 const { CreateKey, GetDate } = require('../utils/lib')
 const sql = require('mssql')
-const salt = 10
+const { getRoleByAccountId } = require('./accessPermissionServices')
 
-async function createCustomer(data) {
-   const columns = [
-      'MaKH',
-      'TenKH',
-      'NgaySinhKH',
-      'DiaChiKH',
-      'SDTKH',
-      'EmailKH',
-      'MatKhauKH',
-      'NgayTao',
-      'NgayCapNhat',
-   ]
-   const { name, birdth, address, phoneNumber, email, password } = data
+const columns = [
+   'MAKH',
+   'MATK',
+   'TENKH',
+   'ANHKH',
+   'NGAYSINHKH',
+   'DIACHIKH',
+   'SDTKH',
+   'EMAILKH',
+   'NGAYTAO',
+   'NGAYCAPNHAT',
+]
+
+async function createCustomer(customerInfo) {
+   const { accountId, name, image, birth, address, phoneNumber, email } = customerInfo
    const customerId = CreateKey('KH_')
    const createdAt = GetDate()
    const updatedAt = GetDate()
-   const hashPassword = await bcrypt.hash(password, salt)
    await connectionPool.then((pool) => {
       return pool
          .request()
          .input('customerId', sql.TYPES.VarChar, customerId)
+         .input('accountId', sql.TYPES.VarChar, accountId)
          .input('name', sql.TYPES.NVarChar, name)
-         .input('birdth', sql.TYPES.DateTimeOffset, birdth)
-         .input('address', sql.TYPES.NVarChar, address)
+         .input('image', sql.TYPES.VarChar, image)
+         .input('birth', sql.TYPES.VarChar, birth)
+         .input('address', sql.TYPES.VarChar, address)
          .input('phoneNumber', sql.TYPES.VarChar, phoneNumber)
          .input('email', sql.TYPES.VarChar, email)
-         .input('password', sql.TYPES.VarChar, hashPassword)
          .input('createdAt', sql.TYPES.DateTimeOffset, createdAt)
          .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`INSERT INTO KHACHHANG (${columns}) VALUES(
                     @customerId,
+                    @accountId,
                     @name,
-                    @birdth,
+                    @image,
+                    @birth,
                     @address,
                     @phoneNumber,
                     @email,
-                    @password,
                     @createdAt,
                     @updatedAt)`)
    })
+   return customerId
 }
 
-async function login(email, password) {
-   const customer = await getCustomerByEmail(email)
-   if (customer) {
-      return bcrypt.compare(password, customer.MATKHAUKH).then((result) => {
-         if (result) {
-            const payload = {
-               customerId: customer.MAKH,
-               name: customer.TENKH,
-               email: customer.EMAILKH,
-               birdth: customer.NGAYSINHKH,
-               address: customer.DIACHIKH,
-               phoneNumber: customer.SDTKH,
-            }
-            const token = jwt.sign(payload, process.env.JWT_SECRET, {
-               expiresIn: process.env.JWT_EXPIRE,
-            })
-            return {
-               token,
-               payload,
-            }
-         } else {
-            return undefined
+async function getCustomerAndRolesByAccountId(accountId) {
+   return await connectionPool
+      .then((pool) => {
+         return pool.request().input('accountId', sql.TYPES.VarChar, accountId)
+            .query(`SELECT *, (SELECT MAVAITRO FROM CO_VAI_TRO WHERE CO_VAI_TRO.MATK = KHACHHANG.MATK FOR JSON PATH) as QUYEN
+               FROM KHACHHANG WHERE KHACHHANG.MATK = @accountId`)
+      })
+      .then((customerInfo) => {
+         const roles = customerInfo.recordset[0].QUYEN ? JSON.parse(customerInfo.recordset[0].QUYEN) : []
+         return {
+            ...customerInfo.recordset[0],
+            QUYEN: roles.map((role) => role.MAVAITRO),
          }
       })
-   } else {
-      return undefined
-   }
 }
 
 async function getCustomerById(customerId) {
-   return await connectionPool
+   const customerInfo = await connectionPool
       .then((pool) => {
          return pool
             .request()
@@ -85,6 +74,11 @@ async function getCustomerById(customerId) {
             .query(`SELECT * FROM KHACHHANG WHERE MaKH = @customerId`)
       })
       .then((customer) => customer.recordset[0])
+   const customerRoles = await getRoleByAccountId(customerInfo.MATK)
+   return {
+      ...customerInfo,
+      roles: customerRoles.map((customerRole) => customerRole.MAVAITRO),
+   }
 }
 
 async function getCustomerByEmail(email) {
@@ -123,7 +117,6 @@ async function getAllCustomers(page) {
 }
 
 async function updateCustomer(data) {
-   const columns = ['MaKH', 'TenKH', 'NgaySinhKH', 'DiaChiKH', 'SDTKH', 'EmailKH', 'NgayCapNhat']
    const { customerId, email, name, birdth, address, phoneNumber } = data
    const updatedAt = GetDate()
    await connectionPool.then((pool) => {
@@ -157,7 +150,7 @@ async function deleteCustomer(customerId) {
 
 module.exports = {
    createCustomer,
-   login,
+   getCustomerAndRolesByAccountId,
    getCustomerById,
    getCustomerByEmail,
    getAllCustomers,

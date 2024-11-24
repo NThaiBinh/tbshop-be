@@ -2,6 +2,8 @@ const sql = require('mssql')
 const { CreateKey, GetDate } = require('../utils/lib')
 const connectionPool = require('../config/dbConfig')
 
+const columns = ['MADM', 'TENDM']
+
 async function getCategoryById(categoryId) {
    return await connectionPool
       .then((pool) => {
@@ -22,38 +24,22 @@ async function getAllCategories() {
 }
 
 async function createCategory(data) {
-   const columns = ['MADM', 'TenDM', 'NgayTao', 'NgayCapNhat']
    const { name } = data
    const categoryId = CreateKey('DM_')
-   const createdAt = GetDate()
-   const updatedAt = GetDate()
-   await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('categoryId', sql.TYPES.VarChar, categoryId)
-         .input('name', sql.TYPES.NVarChar, name)
-         .input('createdAt', sql.TYPES.DateTimeOffset, createdAt)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt)
+   await connectionPool.then((pool) =>
+      pool.request().input('categoryId', sql.TYPES.VarChar, categoryId).input('name', sql.TYPES.NVarChar, name)
          .query(`INSERT INTO DANHMUCSANPHAM (${columns}) VALUES (
                     @categoryId,
-                    @name,
-                    @createdAt,
-                    @updatedAt)`)
-   })
+                    @name)`),
+   )
 }
 
 async function updateCategory(data) {
-   const columns = ['MADM', 'TenDM', 'NgayCapNhat']
    const { categoryId, name } = data
-   const updatedAt = GetDate()
    await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('categoryId', sql.TYPES.VarChar, categoryId)
-         .input('name', sql.TYPES.NVarChar, name)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`UPDATE DANHMUCSANPHAM SET
-                    ${columns[1]} = @name,
-                    ${columns[2]} = @updatedAt
+      return pool.request().input('categoryId', sql.TYPES.VarChar, categoryId).input('name', sql.TYPES.NVarChar, name)
+         .query(`UPDATE DANHMUCSANPHAM SET
+                    ${columns[1]} = @name
                     WHERE ${columns[0]} = @categoryId`)
    })
 }

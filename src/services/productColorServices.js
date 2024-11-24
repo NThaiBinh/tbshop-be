@@ -29,7 +29,7 @@ async function createProductColor(productColors = [], productConfigurationId) {
                   .input('productColorId', sql.TYPES.VarChar, productColorId)
                   .input('productConfigurationId', sql.TYPES.VarChar, productConfigurationId)
                   .input('color', sql.TYPES.VarChar, productColorInfo.color)
-                  .input('name', sql.TYPES.VarChar, productColorInfo.name)
+                  .input('name', sql.TYPES.NVarChar, productColorInfo.name)
                   .query(`INSERT INTO MAUSP (${columns}) VALUES (
                 @productColorId,
                 @productConfigurationId,

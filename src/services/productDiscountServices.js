@@ -87,13 +87,22 @@ async function createProductDiscount(DiscountPanel, DiscountInfo) {
    })
 }
 
-async function deleteManufac(manufacId) {
-   return connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('manufacId', sql.TYPES.VarChar, manufacId)
-         .query(`DELETE NHASANXUAT WHERE MaNSX = @manufacId`)
+function calculateProductDiscount(productPrice, discounts = []) {
+   let discountPrice = productPrice
+   discounts.forEach((discount) => {
+      if (`${discount.GIAKM}`.includes('%')) {
+         discountPrice =
+            discountPrice -
+            (discountPrice * parseFloat(`${discount.GIAKM}`.slice(0, `${discount.GIAKM}`.length - 1))) / 100
+      } else {
+         discountPrice -= parseFloat(discount.GIAKM)
+      }
    })
+   let discountPercentage = Math.round(100 - discountPrice / (productPrice / 100))
+   return {
+      GIAKM: discountPrice === productPrice ? null : discountPrice,
+      PHANTRAMGIAM: discountPercentage === 0 ? null : discountPercentage,
+   }
 }
 
 module.exports = {
@@ -102,4 +111,5 @@ module.exports = {
    getAllProductDiscountsValid,
    getAllProductDiscountsValidByProductId,
    createProductDiscount,
+   calculateProductDiscount,
 }

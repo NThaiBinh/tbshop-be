@@ -3,7 +3,7 @@ const {
    createStorewideDiscount,
    getAllStorewideDiscountsValid,
    getAllStorewideDiscountPanelsValid,
-} = require('../services/storewideDiscount')
+} = require('../services/storewideDiscountServices')
 
 async function getAllStorewideDiscountRouter(req, res) {
    try {

@@ -8,8 +8,7 @@ const {
 
 async function getAllPositionHandler(req, res) {
    try {
-      const page = req.query.page
-      const positions = await getAllPositions(page)
+      const positions = await getAllPositions()
       return res.status(200).json(positions)
    } catch (err) {
       return res.status(500).json({

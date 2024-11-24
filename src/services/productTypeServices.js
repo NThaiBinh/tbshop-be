@@ -2,6 +2,8 @@ const connectionPool = require('../config/dbConfig')
 const sql = require('mssql')
 const { CreateKey, GetDate } = require('../utils/lib')
 
+const columns = ['MALOAISP', 'TENLOAISP']
+
 async function getAllProductTypes() {
    return await connectionPool
       .then((pool) => {
@@ -22,27 +24,19 @@ async function getProductTypeById(productTypeId) {
 }
 
 async function createProductType(data) {
-   const columns = ['MaLoaiSP', 'TenLoaiSP', 'NgayTao', 'NgayCapNhat']
    const { name } = data
    const productTypeId = CreateKey('L_')
-   const createdAt = GetDate()
-   const updatedAt = GetDate()
    return await connectionPool.then((pool) => {
       return pool
          .request()
          .input('productTypeId', sql.TYPES.VarChar, productTypeId)
-         .input('name', sql.TYPES.NVarChar, name)
-         .input('createdAt', sql.TYPES.DateTimeOffset, createdAt)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`INSERT INTO LOAISP (${columns}) VALUES (
+         .input('name', sql.TYPES.NVarChar, name).query(`INSERT INTO LOAISP (${columns}) VALUES (
                     @productTypeId, 
-                    @name, 
-                    @createdAt,
-                    @updatedAt)`)
+                    @name)`)
    })
 }
 
 async function updateProductType(data) {
-   const columns = ['MaLoaiSP', 'TenLoaiSP', 'NgayTao', 'NgayCapNhat']
    const { productTypeId, name } = data
    const updatedAt = GetDate()
    await connectionPool.then((pool) => {
@@ -50,11 +44,9 @@ async function updateProductType(data) {
          .request()
          .input('productTypeId', sql.TYPES.VarChar, productTypeId)
          .input('name', sql.TYPES.NVarChar, name)
-         .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt)
          .query(
             `UPDATE LOAISP SET  
-            ${columns[1]} = @name, 
-            ${columns[3]} = @updatedAt
+            ${columns[1]} = @name
             WHERE ${columns[0]} = @productTypeId`,
          )
    })

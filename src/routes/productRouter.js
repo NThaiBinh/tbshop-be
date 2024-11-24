@@ -6,14 +6,16 @@ const {
    getAllProductByCategoryHandler,
    createProductHandler,
    createProductConfigurationHandler,
-   editProduct,
+   editProductHandler,
    editProductWidthoutConfig,
    updateProductHandler,
    deleteProductHandler,
+   getProductDetailsHandler,
 } = require('../controllers/productController')
 
 productRouter.get('/', getAllProductHandler)
-productRouter.get('/edit', editProduct)
+productRouter.get('/edit', editProductHandler)
+productRouter.get('/details', getProductDetailsHandler)
 productRouter.get('/:categoryId', getAllProductByCategoryHandler)
 productRouter.post('/create', upload.array('productImages'), createProductHandler)
 productRouter.post('/create-product-configuration/:productId', createProductConfigurationHandler)
