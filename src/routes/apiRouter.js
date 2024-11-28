@@ -13,6 +13,9 @@ const storeInfoRouter = require('./storeInfoRouter')
 const storewideDiscountRouter = require('./storewideDiscountRouter')
 const productDiscountRouter = require('./productDiscountRouter')
 const cartRouter = require('./cartRouter')
+const invoiceRouter = require('./invoiceRouter')
+const searchRouter = require('./searchRouter')
+const orderRouter = require('./orderRouter')
 
 // apiRouter.use('*', authentication)
 apiRouter.use('/auth', authRouter)
@@ -27,5 +30,8 @@ apiRouter.use('/store-info', storeInfoRouter)
 apiRouter.use('/storewide-discounts', storewideDiscountRouter)
 apiRouter.use('/product-discounts', productDiscountRouter)
 apiRouter.use('/carts', cartRouter)
+apiRouter.use('/orders', orderRouter)
+apiRouter.use('/invoices', invoiceRouter)
+apiRouter.use('/searchs', searchRouter)
 
 module.exports = apiRouter

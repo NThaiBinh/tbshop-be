@@ -42,6 +42,9 @@ async function createProductColor(productColors = [], productConfigurationId) {
 }
 
 async function deleteProductColor(productColors = []) {
+   if (!Array.isArray(productColors)) {
+      productColors = [productColors]
+   }
    productColors.forEach(async (productColor, index) => {
       const productColorInfo = JSON.parse(productColor)
       if (productColorInfo?.state === 'delete' && `${productColorInfo.productColorId}`.includes('MAU')) {

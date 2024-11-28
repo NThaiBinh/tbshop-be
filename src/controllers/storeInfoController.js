@@ -3,9 +3,13 @@ const { getStoreInfo, updateStoreInfo } = require('../services/storeInfoServices
 async function getStoreInfoHandler(req, res) {
    try {
       const storeInfo = await getStoreInfo()
-      return res.status(200).json(storeInfo)
+      return res.status(200).json({
+         code: 'SS',
+         data: storeInfo,
+      })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })

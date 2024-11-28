@@ -23,31 +23,6 @@ async function getAllCategoryHandler(req, res) {
    }
 }
 
-//-----CREATE-----
-async function createCategoryHandler(req, res) {
-   const { name } = req.body
-   if (!name) {
-      return res.status(400).json({
-         code: 'ER',
-         mesage: 'Missing data',
-      })
-   }
-
-   try {
-      await createCategory(req.body)
-      return res.status(200).json({
-         code: 'SS',
-         mesage: 'Create successfully',
-      })
-   } catch (err) {
-      return res.status(500).json({
-         code: 'ER',
-         message: 'Server error',
-         err,
-      })
-   }
-}
-
 async function editCategory(req, res) {
    const categoryId = req.params.categoryId
    if (!categoryId) {
@@ -130,7 +105,6 @@ async function deleteCategoryHandler(req, res) {
 
 module.exports = {
    getAllCategoryHandler,
-   createCategoryHandler,
    editCategory,
    updateCategoryHandler,
    deleteCategoryHandler,

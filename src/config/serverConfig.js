@@ -8,10 +8,13 @@ const {
    getAllRoles,
    createRoles,
    createRolePermission,
+   getAllRolePermission,
 } = require('../services/accessPermissionServices')
 const { createEmployee } = require('../services/employeeServices')
 const { createPosition } = require('../services/positionServices')
 const { getAccountByUserName, createAdminAccount } = require('../services/authServices')
+const { getAllCategories, createCategory } = require('../services/categoryServices')
+const { getStoreInfo, createStoreInfo } = require('../services/storeInfoServices')
 
 function serverConfigs(app) {
    app.use(express.static(path.join(__dirname, '../public')))
@@ -26,6 +29,13 @@ function serverConfigs(app) {
    app.use(express.urlencoded({ extended: true }))
 }
 
+async function checkCategories() {
+   const categories = await getAllCategories()
+   if (categories.length <= 0) {
+      await createCategory()
+   }
+}
+
 async function checkAccessPermissions() {
    const permissions = await getAllPermissions()
    const roles = await getAllRoles()
@@ -34,6 +44,10 @@ async function checkAccessPermissions() {
    }
    if (roles.length <= 0) {
       await createRoles()
+   }
+   const rolePermission = await getAllRolePermission()
+   if (rolePermission.length <= 0) {
+      createRolePermission()
    }
 }
 
@@ -53,12 +67,20 @@ async function checkAdminAccount() {
       }
       await createEmployee(adminInfo)
       const permissions = await getAllPermissions()
-      permissions.forEach((permission) => createRolePermission('admin', permission.MAQUYEN))
+   }
+}
+
+async function checkStoreInfo() {
+   const storeInfo = await getStoreInfo()
+   if (!storeInfo) {
+      await createStoreInfo()
    }
 }
 
 module.exports = {
    serverConfigs,
+   checkCategories,
    checkAccessPermissions,
    checkAdminAccount,
+   checkStoreInfo,
 }

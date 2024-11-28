@@ -51,15 +51,13 @@ async function getAllProductDiscountPanelsValid() {
       .then((pool) => {
          return pool
             .request()
-            .query(
-               `SELECT ANHKM FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`,
-            )
+            .query(`SELECT ANHKM FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`)
       })
       .then((productDiscounts) => productDiscounts.recordset)
 }
 
-async function createProductDiscount(DiscountPanel, DiscountInfo) {
-   const { productId, name, price, startDate, endDate } = DiscountInfo
+async function createProductDiscount(posterDiscount, discountInfo) {
+   const { productId, name, price, startDate, endDate } = discountInfo
    const productDiscountId = CreateKey('KM_')
    const createdAt = GetDate()
    const updatedAt = GetDate()
@@ -69,7 +67,7 @@ async function createProductDiscount(DiscountPanel, DiscountInfo) {
          .input('productDiscountId', sql.TYPES.VarChar, productDiscountId)
          .input('productId', sql.TYPES.VarChar, productId)
          .input('name', sql.TYPES.NVarChar, name)
-         .input('DiscountPanel', sql.TYPES.VarChar, DiscountPanel.filename)
+         .input('posterDiscount', sql.TYPES.VarChar, posterDiscount.filename)
          .input('price', sql.TYPES.VarChar, price)
          .input('startDate', sql.TYPES.DateTimeOffset, startDate)
          .input('endDate', sql.TYPES.DateTimeOffset, endDate)
@@ -78,7 +76,7 @@ async function createProductDiscount(DiscountPanel, DiscountInfo) {
                   @productDiscountId,        
                   @productId,
                   @name,
-                  @DiscountPanel,
+                  @posterDiscount,
                   @price,
                   @startDate,
                   @endDate,

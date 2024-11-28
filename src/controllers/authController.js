@@ -30,8 +30,8 @@ async function loginHandler(req, res) {
          message: 'Login failed, missing data',
       })
    }
+   const data = await login(userName, password)
    try {
-      const data = await login(userName, password)
       if (data === undefined) {
          return res.status(401).json({
             code: 'ER',

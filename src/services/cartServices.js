@@ -3,7 +3,7 @@ const sql = require('mssql')
 const { CreateKey, GetDate } = require('../utils/lib')
 
 const columns = ['MAGIOHANG', 'MAKH', 'NGAYTAO', 'NGAYCAPNHAT']
-const cartItemColumns = ['MAGIOHANG', 'MAMAUSP', 'MASP', 'MACAUHINH', 'SOLUONGSP', 'GIA', 'TONGTIEN']
+const cartItemColumns = ['MAGIOHANG', 'MAMAUSP', 'MASP', 'MACAUHINH', 'SOLUONGSP', 'GIA', 'TONGTIEN', 'TRANGTHAI']
 const cartItemDiscountColumns = ['MAGIOHANG', 'MAMAUSP', 'MASP', 'MACAUHINH', 'MAKM']
 
 async function createCart(customerId) {
@@ -28,10 +28,9 @@ async function getCartByCustomerId(customerId) {
    return await connectionPool
       .then((pool) =>
          pool.request().input('customerId', sql.TYPES.VarChar, customerId)
-            .query(`SELECT GIOHANG.MAGIOHANG, COUNT(MASP) AS SOSP 
-               FROM GIOHANG LEFT JOIN CTGIOHANG ON GIOHANG.MAGIOHANG = CTGIOHANG.MAGIOHANG 
-               WHERE MAKH = @customerId
-               GROUP BY GIOHANG.MAGIOHANG`),
+            .query(`SELECT GIOHANG.MAGIOHANG, (SELECT COUNT(*) FROM CTGIOHANG WHERE CTGIOHANG.MAGIOHANG = GIOHANG.MAGIOHANG AND TRANGTHAI = 'in-cart') AS SOSPTRONGGIO,
+				(SELECT COUNT(*) FROM CTGIOHANG WHERE CTGIOHANG.MAGIOHANG = GIOHANG.MAGIOHANG AND TRANGTHAI = 'pending') AS SOSPCHODUYET
+				FROM GIOHANG WHERE MAKH = @customerId`),
       )
       .then((cartInfo) => cartInfo.recordset[0])
 }
@@ -39,17 +38,13 @@ async function getCartByCustomerId(customerId) {
 async function getCartItems(cartId) {
    return await connectionPool
       .then((pool) =>
-         pool
-            .request()
-            .input('cartId', sql.TYPES.VarChar, cartId)
-            .query(
-               `SELECT CTGIOHANG.MAGIOHANG, CTGIOHANG.MASP, CTGIOHANG.MACAUHINH, CTGIOHANG.MAMAUSP, TENSP, (SELECT TOP 1  ANHSP FROM ANHSANPHAM WHERE MASP = CTGIOHANG.MASP ORDER BY MAANH) AS ANHSP, 
-               SOLUONGTON, DUNGLUONG, CPU, GPU, RAM, TENMAUSP, SOLUONGSP, GIA, TONGTIEN 
+         pool.request().input('cartId', sql.TYPES.VarChar, cartId).query(`
+               SELECT CTGIOHANG.MAGIOHANG, CTGIOHANG.MASP, CTGIOHANG.MACAUHINH, CTGIOHANG.MAMAUSP, TENSP, (SELECT TOP 1  ANHSP FROM ANHSANPHAM WHERE MASP = CTGIOHANG.MASP ORDER BY MAANH) AS ANHSP, 
+               SOLUONGTON, DUNGLUONG, CPU, GPU, RAM, TENMAUSP, SOLUONGSP, GIA, TONGTIEN, TRANGTHAI
                FROM GIOHANG INNER JOIN CTGIOHANG ON GIOHANG.MAGIOHANG = CTGIOHANG.MAGIOHANG 
                INNER JOIN SANPHAM ON CTGIOHANG.MASP = SANPHAM.MASP 
                INNER JOIN CAUHINH ON CTGIOHANG.MACAUHINH = CAUHINH.MACAUHINH 
-               INNER JOIN MAUSP ON CTGIOHANG.MAMAUSP = MAUSP.MAMAUSP WHERE GIOHANG.MAGIOHANG =  @cartId`,
-            ),
+               INNER JOIN MAUSP ON CTGIOHANG.MAMAUSP = MAUSP.MAMAUSP WHERE GIOHANG.MAGIOHANG =  @cartId`),
       )
       .then((cartItems) => cartItems.recordset)
 }
@@ -71,22 +66,14 @@ async function getCartItem(cartId, productColorId, productId, productConfigurati
 }
 
 async function addCartItem(cartItem) {
-   const {
-      cartId,
-      productId,
-      productConfigurationId,
-      productColorId,
-      quantity,
-      price,
-      totalPrice,
-      productDiscountIds,
-   } = cartItem
+   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = cartItem
    const cartItemExits = await getCartItem(cartId, productColorId, productId, productConfigurationId)
    if (cartItemExits) {
       cartItem.quantity = cartItem.quantity + cartItemExits.SOLUONGSP
       cartItem.totalPrice = cartItem.quantity * cartItem.price
       await updateCartItem(cartItem)
    } else {
+      const status = 'in-cart'
       await connectionPool.then((pool) =>
          pool
             .request()
@@ -96,35 +83,27 @@ async function addCartItem(cartItem) {
             .input('productColorId', sql.TYPES.VarChar, productColorId)
             .input('quantity', sql.TYPES.Int, quantity)
             .input('price', sql.TYPES.Float, price)
-            .input('totalPrice', sql.TYPES.Float, totalPrice).query(`INSERT INTO CTGIOHANG (${cartItemColumns}) VALUES (
+            .input('totalPrice', sql.TYPES.Float, totalPrice)
+            .input('status', sql.TYPES.VarChar, status).query(`INSERT INTO CTGIOHANG (${cartItemColumns}) VALUES (
                @cartId,
                @productColorId,
                @productId,
                @productConfigurationId,
                @quantity,
                @price,
-               @totalPrice)`),
+               @totalPrice,
+               @status)`),
       )
    }
    if (productDiscountIds) {
       productDiscountIds.forEach(
-         async (productDiscountId) =>
-            await createCartItemDiscount(cartId, productColorId, productId, productConfigurationId, productDiscountId),
+         async (productDiscountId) => await createCartItemDiscount(cartId, productColorId, productId, productConfigurationId, productDiscountId),
       )
    }
 }
 
 async function updateCartItem(cartItem) {
-   const {
-      cartId,
-      productId,
-      productConfigurationId,
-      productColorId,
-      quantity,
-      price,
-      totalPrice,
-      productDiscountIds,
-   } = cartItem
+   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = cartItem
    await connectionPool.then((pool) =>
       pool
          .request()
@@ -145,6 +124,17 @@ async function updateCartItem(cartItem) {
 
 async function deleteCartItem(cartItem) {
    const { cartId, productId, productConfigurationId, productColorId } = cartItem
+   await connectionPool.then((pool) =>
+      pool
+         .request()
+         .input('cartId', sql.TYPES.VarChar, cartId)
+         .input('productId', sql.TYPES.VarChar, productId)
+         .input('productConfigurationId', sql.TYPES.VarChar, productConfigurationId)
+         .input('productColorId', sql.TYPES.VarChar, productColorId)
+         .query(
+            `DELETE SAN_PHAM_CO_KHUYEN_MAI WHERE MAGIOHANG = @cartId AND MASP = @productId AND MACAUHINH = @productConfigurationId AND MAMAUSP = @productColorId`,
+         ),
+   )
    await connectionPool.then((pool) =>
       pool
          .request()
@@ -189,4 +179,11 @@ async function deleteCartItemDiscount(cartId, productColorId, productId, product
    )
 }
 
-module.exports = { createCart, getCartByCustomerId, getCartItems, addCartItem, updateCartItem, deleteCartItem }
+module.exports = {
+   createCart,
+   getCartByCustomerId,
+   getCartItems,
+   addCartItem,
+   updateCartItem,
+   deleteCartItem,
+}

@@ -8,11 +8,29 @@ const {
    createManufac,
    updateManufac,
    deleteManufac,
+   getAllManufacsByCategoryId,
 } = require('../services/manufacturerServices')
 
 async function getAllManufacsHandler(req, res) {
    try {
       const manufacs = await getAllManufacs()
+      return res.status(200).json({
+         code: 'SS',
+         data: manufacs,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+async function getAllManufacsByCategoryIdHandler(req, res) {
+   const categoryId = req.params.categoryId
+   try {
+      const manufacs = await getAllManufacsByCategoryId(categoryId)
       return res.status(200).json({
          code: 'SS',
          data: manufacs,
@@ -146,6 +164,7 @@ async function deleteManufacHandler(req, res) {
 
 module.exports = {
    getAllManufacsHandler,
+   getAllManufacsByCategoryIdHandler,
    createManufacHandler,
    editManufacHandler,
    updateManufacHandler,

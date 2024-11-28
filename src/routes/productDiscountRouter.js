@@ -11,7 +11,7 @@ const {
 
 productDiscountRouter.get('/', getAllProductDiscountsHandler)
 productDiscountRouter.get('/valid/all', getAllProductDiscountsValidHandler)
-productDiscountRouter.get('/panels', getAllProductDiscountPanelsValidHandler)
+productDiscountRouter.get('/posters', getAllProductDiscountPanelsValidHandler)
 productDiscountRouter.get('/valid/', getAllProductDiscountsValidByProductIdHandler)
 productDiscountRouter.post('/create', upload.single('posterDiscount'), createProductDiscountHandler)
 // productDiscountRouter.get('/edit/:manufacId', editManufacHandler)

@@ -8,8 +8,10 @@ const {
    editManufacHandler,
    updateManufacHandler,
    deleteManufacHandler,
+   getAllManufacsByCategoryIdHandler,
 } = require('../controllers/manufacturerController')
 
+manufacturerRouter.get('/:categoryId', getAllManufacsByCategoryIdHandler)
 manufacturerRouter.get('/', getAllManufacsHandler)
 manufacturerRouter.post('/create', upload.single('image'), createManufacHandler)
 manufacturerRouter.get('/edit/:manufacId', editManufacHandler)

@@ -23,14 +23,11 @@ async function getAllCategories() {
       .then((categories) => categories.recordset)
 }
 
-async function createCategory(data) {
-   const { name } = data
-   const categoryId = CreateKey('DM_')
+async function createCategory() {
    await connectionPool.then((pool) =>
-      pool.request().input('categoryId', sql.TYPES.VarChar, categoryId).input('name', sql.TYPES.NVarChar, name)
-         .query(`INSERT INTO DANHMUCSANPHAM (${columns}) VALUES (
-                    @categoryId,
-                    @name)`),
+      pool
+         .request()
+         .query(`INSERT INTO DANHMUCSANPHAM (${columns}) VALUES ('phone', N'Điện thoại'), ('laptop', N'Laptop')`),
    )
 }
 

@@ -1,12 +1,7 @@
 const sql = require('mssql')
 const connectionPool = require('../config/dbConfig')
 const { CreateKey, GetDate } = require('../utils/lib')
-const {
-   createImagesProduct,
-   getProductImages,
-   deleteProductImage,
-   updateProductImages,
-} = require('./productImageServices')
+const { createImagesProduct, getProductImages, deleteProductImage, updateProductImages } = require('./productImageServices')
 const {
    createProductConfiguration,
    getProductConfiguration,
@@ -19,13 +14,54 @@ const { calculateProductDiscount } = require('./productDiscountServices')
 
 const columns = ['MASP', 'MADM', 'MANSX', 'MALOAISP', 'TENSP', 'SOLUONGTON', 'NGAYTAO', 'NGAYCAPNHAT']
 
+async function productFilter(categoryId, manufacId, productTypeId, page) {
+   const PAGE_SIZE = 20
+   const skip = (parseInt(page) - 1) * PAGE_SIZE
+   let query = `SELECT
+      SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP,
+      (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM,
+      DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
+      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
+      (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
+   FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP WHERE 1 = 1 `
+
+   if (categoryId) {
+      query += ` AND MADM = @categoryId `
+   }
+
+   if (manufacId) {
+      query += `AND MANSX = @manufacId `
+   }
+
+   if (productTypeId) {
+      query += `AND MALOAISP = @productTypeId `
+   }
+
+   if (page) {
+      query += `ORDER BY NGAYTAO DESC OFFSET ${skip} ROWS FETCH NEXT ${PAGE_SIZE} ROWS ONLY`
+   }
+
+   return await connectionPool
+      .then((pool) =>
+         pool
+            .request()
+            .input('categoryId', sql.TYPES.VarChar, categoryId)
+            .input('manufacId', sql.TYPES.VarChar, manufacId)
+            .input('productTypeId', sql.TYPES.VarChar, productTypeId)
+            .input('page', sql.TYPES.Int, page)
+            .query(query),
+      )
+      .then((results) => results.recordset)
+}
+
+// ORDER BY NGAYTAO DESC
+//                   OFFSET ${skip} ROWS
+//                   FETCH NEXT ${PAGE_SIZE} ROWS ONLY
+
 async function getProductById(productId) {
    return await connectionPool
       .then((pool) => {
-         return pool
-            .request()
-            .input('productId', sql.TYPES.VarChar, productId)
-            .query(`SELECT * FROM SANPHAM WHERE MaSP = @productId`)
+         return pool.request().input('productId', sql.TYPES.VarChar, productId).query(`SELECT * FROM SANPHAM WHERE MaSP = @productId`)
       })
       .then((product) => product.recordset[0])
 }
@@ -50,9 +86,7 @@ async function getAllInfoProducts(page) {
          .then((products) =>
             products.recordset.map((product) => {
                const productDiscounts = product.DANHSACHKHUYENMAI ? JSON.parse(product.DANHSACHKHUYENMAI) : []
-               const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG
-                  ? JSON.parse(product.DANHSACHKHUYENMAICHUNG)
-                  : []
+               const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.DANHSACHKHUYENMAICHUNG) : []
                return {
                   ...product,
                   DANHSACHKHUYENMAI: productDiscounts,
@@ -98,17 +132,13 @@ async function getProductDetailsWidthDiscount(productId, productConfigurationId)
                WHERE MaSP = @productId`)
       })
       .then((product) => {
-         const productDiscounts = product.recordset[0].DANHSACHKHUYENMAI
-            ? JSON.parse(product.recordset[0].DANHSACHKHUYENMAI)
-            : []
-         const storewideDiscounts = product.recordset[0].DANHSACHKHUYENMAICHUNG
-            ? JSON.parse(product.recordset[0].DANHSACHKHUYENMAICHUNG)
-            : []
+         const productDiscounts = product.recordset[0]?.DANHSACHKHUYENMAI ? JSON.parse(product.recordset[0]?.DANHSACHKHUYENMAI) : []
+         const storewideDiscounts = product.recordset[0]?.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.recordset[0]?.DANHSACHKHUYENMAICHUNG) : []
          return {
             ...product.recordset[0],
             DANHSACHKHUYENMAI: productDiscounts,
             DANHSACHKHUYENMAICHUNG: storewideDiscounts,
-            ...calculateProductDiscount(product.recordset[0].GIASP, productDiscounts),
+            ...calculateProductDiscount(product.recordset[0]?.GIASP, productDiscounts),
          }
       })
 
@@ -163,10 +193,7 @@ async function getProductInfoWidthoutConfig(productId) {
 async function getAllProductByCategory(categoryId) {
    return await connectionPool
       .then((pool) => {
-         return pool
-            .request()
-            .input('categoryId', sql.TYPES.VarChar, categoryId)
-            .query(`SELECT * FROM SANPHAM WHERE MaDM = @categoryId`)
+         return pool.request().input('categoryId', sql.TYPES.VarChar, categoryId).query(`SELECT * FROM SANPHAM WHERE MaDM = @categoryId`)
       })
       .then((product) => product.recordset)
 }
@@ -203,14 +230,7 @@ async function createProduct({ productImages, productInfo, productConfiguration,
    await createProductColor(productColors, productConfigurationId)
 }
 
-async function updateProduct(
-   productId,
-   productImages,
-   productInfo,
-   productConfigurationId,
-   productConfiguration,
-   productColors,
-) {
+async function updateProduct(productId, productImages, productInfo, productConfigurationId, productConfiguration, productColors) {
    const { categoryId, productTypeId, manufacId, name, quantity, price } = productInfo
    const updatedAt = GetDate()
 
@@ -244,15 +264,13 @@ async function deleteProduct(productId) {
    await deleteProductPrice(productId)
    await deleteProductConfiguration(productId)
    await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('productId', sql.TYPES.VarChar, productId)
-         .query(`DELETE SANPHAM WHERE MaSP = @productId`)
+      return pool.request().input('productId', sql.TYPES.VarChar, productId).query(`DELETE SANPHAM WHERE MaSP = @productId`)
    })
 }
 
 module.exports = {
    getProductById,
+   productFilter,
    getAllProductByCategory,
    getProductDetails,
    getProductDetailsWidthDiscount,

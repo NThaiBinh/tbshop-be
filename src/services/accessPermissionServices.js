@@ -5,9 +5,7 @@ const rolePermissionColumns = ['MAVAITRO', 'MAQUYEN']
 const roleColumns = ['MAVAITRO', 'MATK']
 
 async function getAllPermissions() {
-   return await connectionPool
-      .then((pool) => pool.request().query('SELECT * FROM QUYEN'))
-      .then((permissions) => permissions.recordset)
+   return await connectionPool.then((pool) => pool.request().query('SELECT * FROM QUYEN')).then((permissions) => permissions.recordset)
 }
 
 async function createPermissions() {
@@ -21,18 +19,13 @@ async function createPermissions() {
 }
 
 async function getAllRoles() {
-   return await connectionPool
-      .then((pool) => pool.request().query('SELECT * FROM VAITRO'))
-      .then((roles) => roles.recordset)
+   return await connectionPool.then((pool) => pool.request().query('SELECT * FROM VAITRO')).then((roles) => roles.recordset)
 }
 
 async function getRoleByAccountId(accountId) {
    return await connectionPool
       .then((pool) =>
-         pool
-            .request()
-            .input('accountId', sql.TYPES.VarChar, accountId)
-            .query('SELECT MAVAITRO FROM CO_VAI_TRO WHERE MATK = @accountId'),
+         pool.request().input('accountId', sql.TYPES.VarChar, accountId).query('SELECT MAVAITRO FROM CO_VAI_TRO WHERE MATK = @accountId'),
       )
       .then((roleIds) => roleIds.recordset)
 }
@@ -46,12 +39,22 @@ async function createRoles() {
    )
 }
 
-async function createRolePermission(roleId, permissionId) {
+async function getAllRolePermission() {
+   return await connectionPool.then((pool) => pool.request().query(`SELECT * FROM CO_QUYEN`)).then((rolePermission) => rolePermission.recordset)
+}
+
+async function createRolePermission() {
    return connectionPool.then((pool) =>
-      pool.request().input('roleId', sql.TYPES.VarChar, roleId).input('permissionId', sql.TYPES.VarChar, permissionId)
-         .query(`INSERT INTO CO_QUYEN (${rolePermissionColumns}) VALUES(
-            @roleId,
-            @permissionId)`),
+      pool.request().query(`
+         INSERT INTO CO_QUYEN  VALUES
+            ('admin', 'create'),
+            ('admin', 'edit'),
+            ('admin', 'delete'),
+            ('admin', 'view'),
+            ('editor', 'create'),
+            ('editor', 'edit'),
+            ('editor', 'view'),
+            ('viewer', 'view')`),
    )
 }
 
@@ -76,4 +79,5 @@ module.exports = {
    createRoles,
    createRolePermission,
    createUserRole,
+   getAllRolePermission,
 }

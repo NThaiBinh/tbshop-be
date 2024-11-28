@@ -11,9 +11,11 @@ const {
    updateProductHandler,
    deleteProductHandler,
    getProductDetailsHandler,
+   productFilterHandler,
 } = require('../controllers/productController')
 
 productRouter.get('/', getAllProductHandler)
+productRouter.get('/filter', productFilterHandler)
 productRouter.get('/edit', editProductHandler)
 productRouter.get('/details', getProductDetailsHandler)
 productRouter.get('/:categoryId', getAllProductByCategoryHandler)

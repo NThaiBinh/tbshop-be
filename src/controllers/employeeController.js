@@ -1,33 +1,36 @@
-const { getAllEmployees, createEmployee, getEmployeeInfoAndRolesById } = require('../services/employeeServices')
+const { getAllEmployees, createEmployee, updateEmployee, deleteEmployee, getEmployeeInfoById } = require('../services/employeeServices')
 
 async function getAllEmployeeHandler(req, res) {
    try {
-      const page = req.query.page
-      const employees = await getAllEmployees(page)
-      return res.status(200).json(employees)
+      const employees = await getAllEmployees()
+      return res.status(200).json({ code: 'SS', data: employees })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          meaasge: 'Server error',
-         err,
       })
    }
 }
 
 async function createEmployeeHandler(req, res) {
+   const image = req.file
    const { positionId, name, birdth, address, phoneNumber, email } = req.body
    if (!positionId || !name || !phoneNumber || !email) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
 
+   await createEmployee({ image: image.filename, ...req.body })
    try {
-      await createEmployee(req.body)
       return res.status(200).json({
+         code: 'SS',
          message: 'Create successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
          err,
       })
@@ -43,7 +46,7 @@ async function editEmployeeHandler(req, res) {
       })
    }
 
-   const employeeInfo = await getEmployeeInfoAndRolesById(employeeId)
+   const employeeInfo = await getEmployeeInfoById(employeeId)
    try {
       if (!employeeInfo) {
          return res.status(404).json({
@@ -64,9 +67,48 @@ async function editEmployeeHandler(req, res) {
    }
 }
 
-async function updateEmployeeHandler(req, res) {}
+async function updateEmployeeHandler(req, res) {
+   const image = req.file
+   const employeeId = req.params.employeeId
+   const { positionId, name, birdth, address, phoneNumber, email } = req.body
+   if (!positionId || !name || !phoneNumber || !email) {
+      return res.status(400).json({
+         code: 'ER',
+         message: 'Missing data',
+      })
+   }
 
-async function deleteEmployeeHandler(req, res) {}
+   await updateEmployee({ employeeId, image: image?.filename, ...req.body })
+   try {
+      return res.status(200).json({
+         code: 'SS',
+         message: 'Create successfully',
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+async function deleteEmployeeHandler(req, res) {
+   const employeeId = req.params.employeeId
+   await deleteEmployee(employeeId)
+   try {
+      return res.status(200).json({
+         code: 'SS',
+         message: 'Delete successfully',
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
 
 module.exports = {
    getAllEmployeeHandler,

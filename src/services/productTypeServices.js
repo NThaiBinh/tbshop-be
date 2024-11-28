@@ -15,10 +15,7 @@ async function getAllProductTypes() {
 async function getProductTypeById(productTypeId) {
    return await connectionPool
       .then((pool) => {
-         return pool
-            .request()
-            .input('productTypeId', sql.TYPES.VarChar, productTypeId)
-            .query('SELECT * FROM LOAISP WHERE MALOAISP = @productTypeId')
+         return pool.request().input('productTypeId', sql.TYPES.VarChar, productTypeId).query('SELECT * FROM LOAISP WHERE MALOAISP = @productTypeId')
       })
       .then((productType) => productType.recordset[0])
 }
@@ -27,10 +24,8 @@ async function createProductType(data) {
    const { name } = data
    const productTypeId = CreateKey('L_')
    return await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('productTypeId', sql.TYPES.VarChar, productTypeId)
-         .input('name', sql.TYPES.NVarChar, name).query(`INSERT INTO LOAISP (${columns}) VALUES (
+      return pool.request().input('productTypeId', sql.TYPES.VarChar, productTypeId).input('name', sql.TYPES.NVarChar, name)
+         .query(`INSERT INTO LOAISP (${columns}) VALUES (
                     @productTypeId, 
                     @name)`)
    })
@@ -54,10 +49,7 @@ async function updateProductType(data) {
 
 async function deleteProductType(productTypeId) {
    await connectionPool.then((pool) => {
-      return pool
-         .request()
-         .input('productTypeId', sql.TYPES.VarChar, productTypeId)
-         .query(`DELETE LOAISP WHERE MaLoaiSP = @productTypeId`)
+      return pool.request().input('productTypeId', sql.TYPES.VarChar, productTypeId).query(`DELETE LOAISP WHERE MaLoaiSP = @productTypeId`)
    })
 }
 

@@ -8,6 +8,7 @@ const { createCustomer, getCustomerAndRolesByAccountId } = require('./customerSe
 const { createUserRole } = require('./accessPermissionServices')
 const { CreateKey, GetDate } = require('../utils/lib')
 const { createCart, getCartByCustomerId } = require('./cartServices')
+const { countAllInvoiceInfo } = require('./invoiceServices')
 
 const columns = ['MATK', 'TENDN', 'MATKHAU', 'LOAITAIKHOAN', 'NGAYTAO', 'NGAYCAPNHAT']
 
@@ -74,7 +75,6 @@ async function login(userName, password) {
             if (accountInfo.LOAITAIKHOAN === 'employee') {
                userInfo = await getEmployeeAndRolesByAccountId(accountInfo.MATK)
                payload = {
-                  ...payload,
                   info: {
                      ...payload,
                      userId: userInfo.MANV,
@@ -94,9 +94,10 @@ async function login(userName, password) {
             } else {
                userInfo = await getCustomerAndRolesByAccountId(accountInfo.MATK)
                const cartInfo = await getCartByCustomerId(userInfo.MAKH)
+               const cntCustomerInvoice = await countAllInvoiceInfo(userInfo.MAKH)
                payload = {
-                  ...payload,
                   info: {
+                     ...payload,
                      userId: userInfo.MAKH,
                      accountId: userInfo.MATK,
                      name: userInfo.TENKH,
@@ -111,7 +112,11 @@ async function login(userName, password) {
                   },
                   cartInfo: {
                      cartId: cartInfo.MAGIOHANG,
-                     quantity: cartInfo.SOSP,
+                     cntProductInCart: cartInfo.SOSPTRONGGIO,
+                     cntProductInPending: cartInfo.SOSPCHODUYET,
+                     cntProductInDelivering: cntCustomerInvoice?.SOSPDANGGIAO || 0,
+                     cntProductInDelivered: cntCustomerInvoice?.SOSPDAGIAO || 0,
+                     cntProductInCanceled: cntCustomerInvoice?.SOSPDAHUY || 0,
                   },
                }
             }

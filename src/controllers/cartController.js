@@ -1,10 +1,11 @@
 const {
-   getCart,
    addCartItem,
    getCartByCustomerId,
    getCartItems,
    updateCartItem,
    deleteCartItem,
+   orderCartItem,
+   cancelOrderCartItem,
 } = require('../services/cartServices')
 
 async function getCartHandler(req, res) {
@@ -24,7 +25,7 @@ async function getCartHandler(req, res) {
    }
 }
 
-async function getCartItemHandler(req, res) {
+async function getCartItemsHandler(req, res) {
    const cartId = req.params.cartId
    try {
       const cartItems = await getCartItems(cartId)
@@ -42,17 +43,8 @@ async function getCartItemHandler(req, res) {
 }
 
 async function addCartItemHandler(req, res) {
-   const {
-      cartId,
-      productId,
-      productConfigurationId,
-      productColorId,
-      quantity,
-      price,
-      totalPrice,
-      productDiscountIds,
-   } = req.body
-   console.log(req.body)
+   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = req.body
+
    if (!cartId || !productId || !productConfigurationId || !productColorId || !quantity || !price || !totalPrice) {
       return res.status(400).json({
          code: 'ER',
@@ -74,17 +66,9 @@ async function addCartItemHandler(req, res) {
       })
    }
 }
+
 async function updateCartItemHandler(req, res) {
-   const {
-      cartId,
-      productId,
-      productConfigurationId,
-      productColorId,
-      quantity,
-      price,
-      totalPrice,
-      productDiscountIds,
-   } = req.body
+   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = req.body
    if (!cartId || !productId || !productConfigurationId || !productColorId || !price || !totalPrice) {
       return res.status(400).json({
          code: 'ER',
@@ -108,6 +92,7 @@ async function updateCartItemHandler(req, res) {
       })
    }
 }
+
 async function deleteCartItemHandler(req, res) {
    const { cartId, productId, productConfigurationId, productColorId } = req.body
    if (!cartId || !productId || !productConfigurationId || !productColorId) {
@@ -133,7 +118,7 @@ async function deleteCartItemHandler(req, res) {
 }
 module.exports = {
    getCartHandler,
-   getCartItemHandler,
+   getCartItemsHandler,
    addCartItemHandler,
    updateCartItemHandler,
    deleteCartItemHandler,
