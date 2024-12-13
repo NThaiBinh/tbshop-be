@@ -3,7 +3,18 @@ const jwt = require('jsonwebtoken')
 const { pathToRegexp } = require('path-to-regexp')
 
 function checkWhiteLists(url) {
-   const whiteLists = ['customers/login', 'customers/register', 'products', 'products/edit/:productId']
+   const whiteLists = [
+      'customers/login',
+      'customers/register',
+      'products',
+      'products/edit/:productId',
+      'store-info',
+      'product-discounts/posters',
+      'product-types',
+      'manufacturers/phone',
+      'products/filter',
+      'manufacturers/laptop',
+   ]
    return whiteLists.find((item) => {
       const regex = pathToRegexp('/api/v1/' + item)
       return regex.regexp.test(url)

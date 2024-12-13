@@ -1,7 +1,12 @@
 const sql = require('mssql')
 const connectionPool = require('../config/dbConfig')
 const { CreateKey, GetDate } = require('../utils/lib')
-const { createImagesProduct, getProductImages, deleteProductImage, updateProductImages } = require('./productImageServices')
+const {
+   createImagesProduct,
+   getProductImages,
+   deleteProductImage,
+   updateProductImages,
+} = require('./productImageServices')
 const {
    createProductConfiguration,
    getProductConfiguration,
@@ -9,7 +14,12 @@ const {
    updateProductConfiguration,
 } = require('./productConfigurationServices')
 const { createProductPrice, getProductPrice, deleteProductPrice } = require('./productPriceServices')
-const { createProductColor, getProductColors, deleteProductColor } = require('./productColorServices')
+const {
+   createProductColor,
+   getProductColors,
+   deleteProductColor,
+   deleteProductColorByProductConfigurationId,
+} = require('./productColorServices')
 const { calculateProductDiscount } = require('./productDiscountServices')
 
 const columns = ['MASP', 'MADM', 'MANSX', 'MALOAISP', 'TENSP', 'SOLUONGTON', 'NGAYTAO', 'NGAYCAPNHAT']
@@ -21,8 +31,7 @@ async function productFilter(categoryId, manufacId, productTypeId, page) {
       SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP,
       (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM,
       DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
-      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
-      (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
+      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI
    FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP WHERE 1 = 1 `
 
    if (categoryId) {
@@ -54,43 +63,66 @@ async function productFilter(categoryId, manufacId, productTypeId, page) {
       .then((results) => results.recordset)
 }
 
-// ORDER BY NGAYTAO DESC
-//                   OFFSET ${skip} ROWS
-//                   FETCH NEXT ${PAGE_SIZE} ROWS ONLY
+async function productFilterDashbroad(q) {
+   if (q) {
+      const searchQuery = `%${q}%`
+      return await connectionPool
+         .then((pool) =>
+            pool.request().input('q', sql.TYPES.NVarChar, searchQuery).query(`
+            SELECT 
+               SANPHAM.MASP, TENSP, TENNSX,(SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
+               (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, SOLUONGTON, MACAUHINH, MANHINH, CPU, GPU, RAM, 
+               DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
+               (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI
+            FROM 
+               SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP INNER JOIN NHASANXUAT ON SANPHAM.MANSX = NHASANXUAT.MANSX
+            WHERE 
+               TENSP LIKE @q OR TENNSX LIKE @q`),
+         )
+         .then((results) => results.recordset)
+   } else {
+      return getAllInfoProducts(1)
+   }
+}
 
 async function getProductById(productId) {
    return await connectionPool
       .then((pool) => {
-         return pool.request().input('productId', sql.TYPES.VarChar, productId).query(`SELECT * FROM SANPHAM WHERE MaSP = @productId`)
+         return pool
+            .request()
+            .input('productId', sql.TYPES.VarChar, productId)
+            .query(`SELECT * FROM SANPHAM WHERE MaSP = @productId`)
       })
       .then((product) => product.recordset[0])
 }
 
-async function getAllInfoProducts(page) {
+async function getAllInfoProducts(page = 1) {
    if (page) {
       const PAGE_SIZE = 20
       const skip = (parseInt(page) - 1) * PAGE_SIZE
       return await connectionPool
          .then((pool) => {
-            return pool.request()
-               .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
-                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM, 
+            return pool.request().query(`
+               SELECT 
+                  SANPHAM.MASP, TENSP, TENNSX,(SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
+                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, SOLUONGTON, MACAUHINH, MANHINH, CPU, GPU, RAM, 
                   DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
-				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
-					  (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
-                  FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP
-                  ORDER BY NGAYTAO DESC
-                  OFFSET ${skip} ROWS 
-                  FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
+				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI
+               FROM 
+                  SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP INNER JOIN NHASANXUAT ON SANPHAM.MANSX = NHASANXUAT.MANSX
+               ORDER BY 
+                  NGAYTAO DESC
+               OFFSET 
+                  ${skip} ROWS 
+               FETCH NEXT 
+                  ${PAGE_SIZE} ROWS ONLY`)
          })
          .then((products) =>
             products.recordset.map((product) => {
                const productDiscounts = product.DANHSACHKHUYENMAI ? JSON.parse(product.DANHSACHKHUYENMAI) : []
-               const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.DANHSACHKHUYENMAICHUNG) : []
                return {
                   ...product,
                   DANHSACHKHUYENMAI: productDiscounts,
-                  DANHSACHKHUYENMAICHUNG: storewideDiscounts,
                   ...calculateProductDiscount(product.GIASP, productDiscounts),
                }
             }),
@@ -98,23 +130,23 @@ async function getAllInfoProducts(page) {
    }
    return await connectionPool
       .then((pool) => {
-         return pool.request()
-            .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
-                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, MACAUHINH, MANHINH, CPU, GPU, RAM, 
+         return pool.request().query(`
+            SELECT 
+                  SANPHAM.MASP, TENSP, TENNSX,(SELECT TOP 1 ANHSP FROM ANHSANPHAM WHERE ANHSANPHAM.MASP = SANPHAM.MASP ORDER BY MAANH ASC) AS ANHSP, 
+                  (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, SOLUONGTON, MACAUHINH, MANHINH, CPU, GPU, RAM, 
                   DOPHANGIAI, TANGSOQUET, DUNGLUONG, SAC, SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT,
-				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI,
-					  (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
-                  FROM SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP
-                  ORDER BY NGAYTAO DESC`)
+				      (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI
+               FROM 
+                  SANPHAM INNER JOIN CAUHINH ON SANPHAM.MASP = CAUHINH.MASP INNER JOIN NHASANXUAT ON SANPHAM.MANSX = NHASANXUAT.MANSX
+            ORDER BY 
+               NGAYTAO DESC`)
       })
       .then((products) =>
          products.recordset.map((product) => {
             const productDiscounts = product.DANHSACHKHUYENMAI ? JSON.parse(product.DANHSACHKHUYENMAI) : []
-            const storewideDiscounts = product.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.DANHSACHKHUYENMAICHUNG) : []
             return {
                ...product,
                DANHSACHKHUYENMAI: productDiscounts,
-               DANHSACHKHUYENMAICHUNG: storewideDiscounts,
                ...calculateProductDiscount(product.GIASP, productDiscounts),
             }
          }),
@@ -126,18 +158,17 @@ async function getProductDetailsWidthDiscount(productId, productConfigurationId)
       .then((pool) => {
          return pool.request().input('productId', sql.TYPES.VarChar, productId)
             .query(`SELECT SANPHAM.MASP, TENSP, (SELECT TOP 1 GIASP FROM GIASP WHERE GIASP.MASP = SANPHAM.MASP ORDER BY NGAYCAPNHATGIA DESC) AS GIASP, SOLUONGTON,
-               SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT, (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI, 
-               (SELECT * FROM KHUYENMAICHUNG WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAICHUNG
+               SANPHAM.NGAYTAO, SANPHAM.NGAYCAPNHAT, (SELECT * FROM KHUYENMAI WHERE KHUYENMAI.MASP = SANPHAM.MASP AND DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC FOR JSON PATH) AS DANHSACHKHUYENMAI
                FROM SANPHAM
                WHERE MaSP = @productId`)
       })
       .then((product) => {
-         const productDiscounts = product.recordset[0]?.DANHSACHKHUYENMAI ? JSON.parse(product.recordset[0]?.DANHSACHKHUYENMAI) : []
-         const storewideDiscounts = product.recordset[0]?.DANHSACHKHUYENMAICHUNG ? JSON.parse(product.recordset[0]?.DANHSACHKHUYENMAICHUNG) : []
+         const productDiscounts = product.recordset[0]?.DANHSACHKHUYENMAI
+            ? JSON.parse(product.recordset[0]?.DANHSACHKHUYENMAI)
+            : []
          return {
             ...product.recordset[0],
             DANHSACHKHUYENMAI: productDiscounts,
-            DANHSACHKHUYENMAICHUNG: storewideDiscounts,
             ...calculateProductDiscount(product.recordset[0]?.GIASP, productDiscounts),
          }
       })
@@ -193,7 +224,10 @@ async function getProductInfoWidthoutConfig(productId) {
 async function getAllProductByCategory(categoryId) {
    return await connectionPool
       .then((pool) => {
-         return pool.request().input('categoryId', sql.TYPES.VarChar, categoryId).query(`SELECT * FROM SANPHAM WHERE MaDM = @categoryId`)
+         return pool
+            .request()
+            .input('categoryId', sql.TYPES.VarChar, categoryId)
+            .query(`SELECT * FROM SANPHAM WHERE MaDM = @categoryId`)
       })
       .then((product) => product.recordset)
 }
@@ -230,7 +264,14 @@ async function createProduct({ productImages, productInfo, productConfiguration,
    await createProductColor(productColors, productConfigurationId)
 }
 
-async function updateProduct(productId, productImages, productInfo, productConfigurationId, productConfiguration, productColors) {
+async function updateProduct(
+   productId,
+   productImages,
+   productInfo,
+   productConfigurationId,
+   productConfiguration,
+   productColors,
+) {
    const { categoryId, productTypeId, manufacId, name, quantity, price } = productInfo
    const updatedAt = GetDate()
 
@@ -259,13 +300,31 @@ async function updateProduct(productId, productImages, productInfo, productConfi
    await createProductColor(productColors, productConfigurationId)
 }
 
-async function deleteProduct(productId) {
-   await deleteProductImage(productId)
-   await deleteProductPrice(productId)
-   await deleteProductConfiguration(productId)
-   await connectionPool.then((pool) => {
-      return pool.request().input('productId', sql.TYPES.VarChar, productId).query(`DELETE SANPHAM WHERE MaSP = @productId`)
-   })
+async function getAllConfigurations(productId) {
+   return await connectionPool
+      .then((pool) =>
+         pool
+            .request()
+            .input('productId', sql.TYPES.VarChar, productId)
+            .query(`SELECT * FROM CAUHINH WHERE MASP = @productId`),
+      )
+      .then((productConfigurations) => productConfigurations.recordset)
+}
+
+async function deleteProduct(productId, productConfigurationId) {
+   await deleteProductColorByProductConfigurationId(productConfigurationId)
+   await deleteProductConfiguration(productConfigurationId)
+   const productConfigurations = await getAllConfigurations(productId)
+   if (!productConfigurations) {
+      await deleteProductImage(productId)
+      await deleteProductPrice(productId)
+      await connectionPool.then((pool) => {
+         return pool
+            .request()
+            .input('productId', sql.TYPES.VarChar, productId)
+            .query(`DELETE SANPHAM WHERE MaSP = @productId`)
+      })
+   }
 }
 
 module.exports = {
@@ -279,4 +338,5 @@ module.exports = {
    createProduct,
    updateProduct,
    deleteProduct,
+   productFilterDashbroad,
 }

@@ -8,7 +8,9 @@ const columns = ['MANV', 'MATK', 'MACV', 'TENNV', 'ANHNV', 'NGAYSINHNV', 'DIACHI
 async function getAllEmployees() {
    return await connectionPool
       .then((pool) => {
-         return pool.request().query(`SELECT * FROM NHANVIEN`)
+         return pool.request().query(`
+            SELECT MANV, MATK, NHANVIEN.MACV, TENCV, TENNV, ANHNV, NGAYSINHNV, DIACHINV, SDTNV, EMAILNV, NGAYTAO, NGAYCAPNHAT 
+            FROM NHANVIEN INNER JOIN CHUCVU ON NHANVIEN.MACV = CHUCVU.MACV`)
       })
       .then((employees) => employees.recordset)
 }
@@ -88,7 +90,7 @@ async function createEmployee(employeeInfo) {
 }
 
 async function updateEmployee(employeeInfo) {
-   const { employeeId, positionId, name, image, birdth, address, phoneNumber, email } = employeeInfo
+   const { employeeId, positionId, name, image, birth, address, phoneNumber, email } = employeeInfo
    const updatedAt = GetDate()
    await connectionPool.then((pool) => {
       return pool
@@ -97,7 +99,7 @@ async function updateEmployee(employeeInfo) {
          .input('positionId', sql.TYPES.VarChar, positionId)
          .input('name', sql.TYPES.NVarChar, name)
          .input('image', sql.TYPES.VarChar, image)
-         .input('birdth', sql.TYPES.DateTimeOffset, birdth)
+         .input('birth', sql.TYPES.DateTimeOffset, birth)
          .input('address', sql.TYPES.NVarChar, address)
          .input('phoneNumber', sql.TYPES.VarChar, phoneNumber)
          .input('email', sql.TYPES.VarChar, email)
@@ -108,7 +110,7 @@ async function updateEmployee(employeeInfo) {
                ${columns[2]} = @positionId,
                ${columns[3]} = @name,
                ${columns[4]} = @image,
-               ${columns[5]} = @birdth,
+               ${columns[5]} = @birth,
                ${columns[6]} = @address,
                ${columns[7]} = @phoneNumber,
                ${columns[8]} = @email,
@@ -118,7 +120,10 @@ async function updateEmployee(employeeInfo) {
    })
 }
 
-async function deleteEmployee(employeeId) {
+async function deleteEmployee(employeeId, accountId) {
+   await connectionPool.then((pool) =>
+      pool.request().input('accountId', sql.TYPES.VarChar, accountId).query(`DELETE CO_VAI_TRO WHERE MATK = @accountId`),
+   )
    await connectionPool.then((pool) => {
       return pool.request().input('employeeId', sql.TYPES.VarChar, employeeId).query(`
             DELETE 
@@ -126,6 +131,9 @@ async function deleteEmployee(employeeId) {
             WHERE
                MANV = @employeeId`)
    })
+   await connectionPool.then((pool) =>
+      pool.request().input('accountId', sql.TYPES.VarChar, accountId).query(`DELETE TAIKHOAN WHERE MATK = @accountId`),
+   )
 }
 
 module.exports = {

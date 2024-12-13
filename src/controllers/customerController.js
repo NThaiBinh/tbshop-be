@@ -15,11 +15,14 @@ async function getAllCustomerHandler(req, res) {
    try {
       const page = req.query.page
       const customers = await getAllCustomers(page)
-      return res.status(200).json(customers)
+      return res.status(200).json({
+         code: 'SS',
+         data: customers,
+      })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -52,6 +55,7 @@ async function getInfoCustomerHandler(req, res) {
    const customerId = req.params.customerId
    if (!customerId) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
@@ -59,14 +63,15 @@ async function getInfoCustomerHandler(req, res) {
    try {
       if (!customerInfo) {
          return res.status(200).json({
+            code: 'ER',
             message: 'Customer not found!',
          })
       }
       return res.status(200).json(customerInfo)
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -75,6 +80,7 @@ async function editCustomerHandler(req, res) {
    const customerId = req.params.customerId
    if (!customerId) {
       return res.status(400).json({
+         coder: 'ER',
          message: 'Missing data',
       })
    }
@@ -83,6 +89,7 @@ async function editCustomerHandler(req, res) {
       const customer = await getCustomerById(customerId)
       if (!customer) {
          return res.status(200).json({
+            code: 'NF',
             message: 'Customer not found',
          })
       }
@@ -92,8 +99,8 @@ async function editCustomerHandler(req, res) {
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -108,28 +115,27 @@ async function updateCustomerHandler(req, res) {
       })
    }
 
-   try {
-      const customer = await getCustomerByEmail(email)
-      if (customer && customer.MAKH !== customerId) {
-         return res.status(409).json({
-            code: 'EX',
-            message: 'Email already exits',
-         })
-      }
-      await updateCustomer({
-         customerId,
-         customerImage: req.body.image ? req.body.image : req.file?.filename,
-         ...req.body,
+   const customer = await getCustomerByEmail(email)
+   if (customer && customer.MAKH !== customerId) {
+      return res.status(409).json({
+         code: 'EX',
+         message: 'Email already exits',
       })
-
+   }
+   await updateCustomer({
+      customerId,
+      customerImage: req.body.image ? req.body.image : req.file?.filename,
+      ...req.body,
+   })
+   try {
       return res.status(200).json({
          code: 'SS',
          message: 'Update successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -138,6 +144,7 @@ async function deleteCustomerHandler(req, res) {
    const customerId = req.params.customerId
    if (!customerId) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
@@ -150,7 +157,6 @@ async function deleteCustomerHandler(req, res) {
    } catch (err) {
       return res.status(500).json({
          message: 'Server error',
-         err,
       })
    }
 }
@@ -175,7 +181,6 @@ async function createCustomerAddressHandler(req, res) {
       return res.status(500).json({
          code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -192,7 +197,6 @@ async function getAllCustomerAddressHandler(req, res) {
       return res.status(500).json({
          code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -209,7 +213,6 @@ async function updateDefaultCustomerAddressHandler(req, res) {
       return res.status(500).json({
          code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }
@@ -226,7 +229,6 @@ async function deleteCustomerAddressHandler(req, res) {
       return res.status(500).json({
          code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }

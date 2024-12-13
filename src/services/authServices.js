@@ -21,21 +21,29 @@ async function getAccountByUserName(userName) {
 async function register(registerInfo) {
    const { positionId, name, image, birth, address, phoneNumber, email, userName, password, accountType } = registerInfo
    const accountId = await createAccount(userName, password, accountType)
+   await createUserRole('viewer', accountId)
    if (accountType === 'customer') {
       if (accountId && name) {
          const customerId = await createCustomer({ accountId, name, image, birth, address, phoneNumber, email })
          await createCart(customerId)
       }
    } else {
-      if (accountId && positionId && name && phoneNumber && email) {
-         await createEmployee({ accountId, positionId, name, birdth, address, phoneNumber, email })
-      }
+      await createEmployee({
+         accountId,
+         positionId,
+         name,
+         image: 'default-avatar.jpg',
+         birth,
+         address,
+         phoneNumber,
+         email,
+      })
    }
 }
 
 async function createAdminAccount() {
    const accountId = await createAccount('admin', 'admin@123', 'employee')
-   await createUserRole(['admin'], accountId)
+   await createUserRole('admin', accountId)
    return accountId
 }
 

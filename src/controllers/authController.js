@@ -8,8 +8,8 @@ async function registerHandler(req, res) {
          message: 'Missing data',
       })
    }
+   await register(req.body)
    try {
-      await register(req.body)
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',
@@ -42,7 +42,7 @@ async function loginHandler(req, res) {
          httpOnly: true, // Bảo vệ khỏi JavaScript truy cập
          secure: true, // Chỉ gửi qua HTTPS (bật khi triển khai)
          sameSite: 'Strict', // Chống CSRF
-         maxAge: 24 * 60 * 60 * 1000, // Cookie hết hạn sau 1 giờ (1h = 3600000ms)
+         maxAge: 24 * 60 * 60 * 1000,
       })
       return res.json({
          code: 'SS',

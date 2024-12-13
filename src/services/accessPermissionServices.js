@@ -1,8 +1,21 @@
 const connectionPool = require('../config/dbConfig')
 const sql = require('mssql')
 
-const rolePermissionColumns = ['MAVAITRO', 'MAQUYEN']
 const roleColumns = ['MAVAITRO', 'MATK']
+
+async function getAllUserAndRoles() {
+   return await connectionPool
+      .then((pool) =>
+         pool.request().query(`
+         SELECT 
+            MANV, NHANVIEN.MATK, TENDN, TENNV, TENCV, MAVAITRO, LOAITAIKHOAN
+         FROM 
+            NHANVIEN INNER JOIN TAIKHOAN ON NHANVIEN.MATK = TAIKHOAN.MATK 
+            INNER JOIN CHUCVU ON NHANVIEN.MACV = CHUCVU.MACV
+            INNER JOIN CO_VAI_TRO ON TAIKHOAN.MATK = CO_VAI_TRO.MATK`),
+      )
+      .then((userRoleInfo) => userRoleInfo.recordset)
+}
 
 async function getAllPermissions() {
    return await connectionPool.then((pool) => pool.request().query('SELECT * FROM QUYEN')).then((permissions) => permissions.recordset)
@@ -58,16 +71,23 @@ async function createRolePermission() {
    )
 }
 
-async function createUserRole(roles = [], accountId) {
-   roles.forEach(
-      async (role) =>
-         await connectionPool.then((pool) =>
-            pool
-               .request()
-               .input('role', sql.TYPES.VarChar, role)
-               .input('accountId', sql.TYPES.VarChar, accountId)
-               .query(`INSERT INTO CO_VAI_TRO (${roleColumns}) VALUES (@role, @accountId)`),
-         ),
+async function createUserRole(role, accountId) {
+   await connectionPool.then((pool) =>
+      pool
+         .request()
+         .input('role', sql.TYPES.VarChar, role)
+         .input('accountId', sql.TYPES.VarChar, accountId)
+         .query(`INSERT INTO CO_VAI_TRO (${roleColumns}) VALUES (@role, @accountId)`),
+   )
+}
+
+async function updateUserRole(accountId, roleInfo) {
+   await connectionPool.then((pool) =>
+      pool
+         .request()
+         .input('accountId', sql.TYPES.VarChar, accountId)
+         .input('roleInfo', sql.TYPES.VarChar, roleInfo)
+         .query(`UPDATE CO_VAI_TRO SET MAVAITRO = @roleInfo WHERE MATK = @accountId`),
    )
 }
 
@@ -80,4 +100,6 @@ module.exports = {
    createRolePermission,
    createUserRole,
    getAllRolePermission,
+   getAllUserAndRoles,
+   updateUserRole,
 }

@@ -20,19 +20,21 @@ async function updateStoreInfoHandler(req, res) {
    const { name, address, phoneNumber, email } = req.body
    if (!name || !address || !phoneNumber || !email) {
       return res.status(400).json({
+         code: 'ER',
          message: 'Missing data',
       })
    }
 
-   await updateStoreInfo(req.body)
+   await updateStoreInfo({ image: req.file?.filename || null, ...req.body })
    try {
-      return res.status(500).json({
+      return res.status(200).json({
+         code: 'SS',
          message: 'Update successfully',
       })
    } catch (err) {
       return res.status(500).json({
+         code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }

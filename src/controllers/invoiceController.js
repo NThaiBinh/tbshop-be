@@ -1,8 +1,18 @@
-const { createInvoice, getAllInvoices, getAllInvoicesByCustomerId, confirmInvoice } = require('../services/invoiceServices')
+const { getCustomerById } = require('../services/customerServices')
+const {
+   createInvoice,
+   getAllInvoices,
+   getAllInvoicesByCustomerId,
+   confirmInvoice,
+   printInvoice,
+   statistical,
+} = require('../services/invoiceServices')
+const sendMail = require('../services/mailServices')
 
 async function getAllInvoicesHandler(req, res) {
+   const { status } = req.query
    try {
-      const invoices = await getAllInvoices()
+      const invoices = await getAllInvoices(status)
       return res.status(200).json({
          code: 'SS',
          data: invoices,
@@ -40,9 +50,22 @@ async function createInvoiceHandler(req, res) {
          mesage: 'Missing data',
       })
    }
-
-   await createInvoice(req.body)
    try {
+      await createInvoice(req.body)
+      const customerInfo = await getCustomerById(customerId)
+      sendMail(
+         customerInfo.EMAILKH,
+         'ĐẶT HÀNG THÀNH CÔNG',
+         `<h1 style=""color:rgb(72, 72, 238); font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;"">Cảm ơn quý khách</h1>
+                        <p>Cản ơn quý khách đã tin tưởng sử dụng dịch vụ của chúng tôi. Nếu có gì thắc mắc hoặc góp ý xin vui lòng gửi về Mail
+                            <span style=""color:rgb(230, 30, 230)"">nguyenthaibinh838@gmail.com</span>. Chúng tôi rất sẵn lòng tiếp nhận.
+                            <br>
+                            <br>
+                            <br>
+                            Xin cảm ơn, <br>
+                            TBSHOP
+                        </p>`,
+      )
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',
@@ -52,6 +75,22 @@ async function createInvoiceHandler(req, res) {
          code: 'ER',
          message: 'Server error',
          err,
+      })
+   }
+}
+
+async function printInvoiceHandler(req, res) {
+   const invoiceId = req.params.invoiceId
+   try {
+      const invoiceInfo = await printInvoice(invoiceId)
+      return res.status(200).json({
+         code: 'SS',
+         data: invoiceInfo,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
       })
    }
 }
@@ -73,4 +112,28 @@ async function confirmInvoiceHandler(req, res) {
    }
 }
 
-module.exports = { getAllInvoicesHandler, getAllInvoicesByCustomerIdHandler, createInvoiceHandler, confirmInvoiceHandler }
+async function statisticalHandler(req, res) {
+   const { startDate, endDate } = req.query
+   const data = await statistical(startDate, endDate)
+   try {
+      return res.status(200).json({
+         code: 'SS',
+         data,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+module.exports = {
+   getAllInvoicesHandler,
+   getAllInvoicesByCustomerIdHandler,
+   createInvoiceHandler,
+   confirmInvoiceHandler,
+   printInvoiceHandler,
+   statisticalHandler,
+}

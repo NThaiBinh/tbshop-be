@@ -18,15 +18,13 @@ function CreateKey(prefix) {
 
 function GetDate() {
    const date = new Date()
-   return `${
-      date.getMonth() + 1
-   }/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+   return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
 }
 
 function setNullFieldEmty(objectHandle) {
    if (typeof objectHandle === 'object') {
       for (let key in objectHandle) {
-         if (objectHandle[key] === '') {
+         if (objectHandle[key] === '' || objectHandle[key] === 'null') {
             objectHandle[key] = null
          }
       }

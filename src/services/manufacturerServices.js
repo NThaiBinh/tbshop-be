@@ -9,7 +9,10 @@ const columns = ['MANSX', 'TENNSX', 'ANHNSX', 'DIACHINSX', 'SDTNSX', 'EMAILNSX']
 async function getManufacById(manufacId) {
    return await connectionPool
       .then((pool) => {
-         return pool.request().input('manufacId', sql.TYPES.VarChar, manufacId).query(`SELECT * FROM NHASANXUAT WHERE MaNSX = @manufacId`)
+         return pool
+            .request()
+            .input('manufacId', sql.TYPES.VarChar, manufacId)
+            .query(`SELECT * FROM NHASANXUAT WHERE MaNSX = @manufacId`)
       })
       .then((manufac) => manufac.recordset[0])
 }
@@ -17,7 +20,10 @@ async function getManufacById(manufacId) {
 async function getManufacByEmail(email) {
    return await connectionPool
       .then((pool) => {
-         return pool.request().input('email', sql.TYPES.VarChar, email).query(`SELECT * FROM NHASANXUAT WHERE EmailNSX = @email`)
+         return pool
+            .request()
+            .input('email', sql.TYPES.VarChar, email)
+            .query(`SELECT * FROM NHASANXUAT WHERE EmailNSX = @email`)
       })
       .then((manufac) => manufac.recordset[0])
 }
@@ -67,10 +73,16 @@ async function createManufac(data) {
 async function updateManufac(data) {
    const { manufacId, name, address, phoneNumber, email, image } = data
    const manufacturer = await getManufacById(manufacId)
+
+   if (!manufacturer) {
+      throw new Error('Manufacturer not found')
+   }
+
    if (manufacturer.ANHNSX) {
       const filePath = path.join(__dirname, `../public/images/${manufacturer.ANHNSX}`)
       fsPromises.unlink(filePath).catch((err) => console.log('File not found!'))
    }
+
    return connectionPool.then((pool) => {
       return pool
          .request()
@@ -96,7 +108,10 @@ async function deleteManufac(manufacId) {
       fsPromises.unlink(filePath)
    }
    return connectionPool.then((pool) => {
-      return pool.request().input('manufacId', sql.TYPES.VarChar, manufacId).query(`DELETE NHASANXUAT WHERE MaNSX = @manufacId`)
+      return pool
+         .request()
+         .input('manufacId', sql.TYPES.VarChar, manufacId)
+         .query(`DELETE NHASANXUAT WHERE MaNSX = @manufacId`)
    })
 }
 

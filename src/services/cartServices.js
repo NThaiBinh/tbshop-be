@@ -39,14 +39,52 @@ async function getCartItems(cartId) {
    return await connectionPool
       .then((pool) =>
          pool.request().input('cartId', sql.TYPES.VarChar, cartId).query(`
-               SELECT CTGIOHANG.MAGIOHANG, CTGIOHANG.MASP, CTGIOHANG.MACAUHINH, CTGIOHANG.MAMAUSP, TENSP, (SELECT TOP 1  ANHSP FROM ANHSANPHAM WHERE MASP = CTGIOHANG.MASP ORDER BY MAANH) AS ANHSP, 
-               SOLUONGTON, DUNGLUONG, CPU, GPU, RAM, TENMAUSP, SOLUONGSP, GIA, TONGTIEN, TRANGTHAI
-               FROM GIOHANG INNER JOIN CTGIOHANG ON GIOHANG.MAGIOHANG = CTGIOHANG.MAGIOHANG 
-               INNER JOIN SANPHAM ON CTGIOHANG.MASP = SANPHAM.MASP 
-               INNER JOIN CAUHINH ON CTGIOHANG.MACAUHINH = CAUHINH.MACAUHINH 
-               INNER JOIN MAUSP ON CTGIOHANG.MAMAUSP = MAUSP.MAMAUSP WHERE GIOHANG.MAGIOHANG =  @cartId`),
+               SELECT
+                  CTGIOHANG.MAGIOHANG, 
+                  CTGIOHANG.MASP, 
+                  CTGIOHANG.MACAUHINH, 
+                  CTGIOHANG.MAMAUSP, 
+                  TENSP, 
+                  (SELECT TOP 1  ANHSP FROM ANHSANPHAM WHERE MASP = CTGIOHANG.MASP ORDER BY MAANH) AS ANHSP, 
+                  SOLUONGTON,
+                  DUNGLUONG, 
+                  CPU, 
+                  GPU, 
+                  RAM, 
+                  TENMAUSP, 
+                  SOLUONGSP, 
+                  GIA, 
+                  TONGTIEN,
+                  TRANGTHAI,
+                  (SELECT
+                     KHUYENMAI.MAKM, 
+                     TENKM,
+                     GIAKM, 
+                     NGAYBATDAU, 
+                     NGAYKETTHUC 
+                  FROM
+                     KHUYENMAI 
+                     INNER JOIN SAN_PHAM_CO_KHUYEN_MAI ON KHUYENMAI.MASP = SAN_PHAM_CO_KHUYEN_MAI.MASP
+                  WHERE 
+                     KHUYENMAI.MASP = CTGIOHANG.MASP 
+                     FOR JSON PATH) AS DANHSACHKHUYENMAI
+               FROM
+                  GIOHANG 
+                  INNER JOIN CTGIOHANG ON GIOHANG.MAGIOHANG = CTGIOHANG.MAGIOHANG 
+                  INNER JOIN SANPHAM ON CTGIOHANG.MASP = SANPHAM.MASP 
+                  INNER JOIN CAUHINH ON CTGIOHANG.MACAUHINH = CAUHINH.MACAUHINH 
+                  INNER JOIN MAUSP ON CTGIOHANG.MAMAUSP = MAUSP.MAMAUSP
+               WHERE 
+                  GIOHANG.MAGIOHANG =  @cartId`),
       )
-      .then((cartItems) => cartItems.recordset)
+      .then((cartItems) =>
+         cartItems.recordset?.map((cartItem) => {
+            return {
+               ...cartItem,
+               DANHSACHKHUYENMAI: cartItem.DANHSACHKHUYENMAI ? JSON.parse(cartItem.DANHSACHKHUYENMAI) : [],
+            }
+         }),
+      )
 }
 
 async function getCartItem(cartId, productColorId, productId, productConfigurationId) {
@@ -66,7 +104,16 @@ async function getCartItem(cartId, productColorId, productId, productConfigurati
 }
 
 async function addCartItem(cartItem) {
-   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = cartItem
+   const {
+      cartId,
+      productId,
+      productConfigurationId,
+      productColorId,
+      quantity,
+      price,
+      totalPrice,
+      productDiscountIds,
+   } = cartItem
    const cartItemExits = await getCartItem(cartId, productColorId, productId, productConfigurationId)
    if (cartItemExits) {
       cartItem.quantity = cartItem.quantity + cartItemExits.SOLUONGSP
@@ -97,13 +144,23 @@ async function addCartItem(cartItem) {
    }
    if (productDiscountIds) {
       productDiscountIds.forEach(
-         async (productDiscountId) => await createCartItemDiscount(cartId, productColorId, productId, productConfigurationId, productDiscountId),
+         async (productDiscountId) =>
+            await createCartItemDiscount(cartId, productColorId, productId, productConfigurationId, productDiscountId),
       )
    }
 }
 
 async function updateCartItem(cartItem) {
-   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = cartItem
+   const {
+      cartId,
+      productId,
+      productConfigurationId,
+      productColorId,
+      quantity,
+      price,
+      totalPrice,
+      productDiscountIds,
+   } = cartItem
    await connectionPool.then((pool) =>
       pool
          .request()

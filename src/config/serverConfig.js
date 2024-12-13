@@ -60,13 +60,13 @@ async function checkAdminAccount() {
          accountId,
          positionId,
          name: 'ADMIN',
-         birdth: null,
+         image: 'default-avatar.jpg',
+         birth: null,
          address: null,
          phoneNumber: '0000000000',
          email: 'admin@gmail.com',
       }
       await createEmployee(adminInfo)
-      const permissions = await getAllPermissions()
    }
 }
 

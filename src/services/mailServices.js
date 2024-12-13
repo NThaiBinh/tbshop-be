@@ -8,17 +8,18 @@ const transporter = nodemailer.createTransport({
    },
 })
 
-function sendMail(to, subject, text) {
+function sendMail(to, subject, html) {
    const mailOptions = {
       from: 'nguyenthaibinh838@gmail.com',
-      to: 'penguincute0208@gmail.com',
-      subject: 'Alo Alo',
-      text: 'ola-ola',
+      to: to,
+      subject: subject,
+      html: html,
    }
 
-   transporter.sendMail(mailOptions, (err, info) => {
-      console.log(err)
-   })
+   mailOptions.to &&
+      transporter.sendMail(mailOptions, (err, info) => {
+         console.log(err)
+      })
 }
 
 module.exports = sendMail

@@ -255,12 +255,12 @@ async function updateProductConfiguration(productConfiguration, productConfigura
 
 //            ,
 //
-async function deleteProductConfiguration(productId) {
+async function deleteProductConfiguration(productConfigurationId) {
    await connectionPool.then((pool) => {
       return pool
          .request()
-         .input('productId', sql.TYPES.VarChar, productId)
-         .query('DELETE CAUHINH WHERE MASP = @productId')
+         .input('productConfigurationId', sql.TYPES.VarChar, productConfigurationId)
+         .query('DELETE CAUHINH WHERE MACAUHINH = @productConfigurationId')
    })
 }
 

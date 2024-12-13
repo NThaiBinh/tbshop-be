@@ -9,13 +9,13 @@ const {
    getProductDetails,
    getProductDetailsWidthDiscount,
    productFilter,
+   productFilterDashbroad,
 } = require('../services/productServices')
 const { setNullFieldEmty } = require('../utils/lib')
 
 async function getAllProductHandler(req, res) {
-   const page = req.query.page
-   const products = await getAllInfoProducts(page)
    try {
+      const products = await getAllInfoProducts(req.query.page)
       return res.status(200).json({
          code: 'SS',
          data: products,
@@ -30,8 +30,24 @@ async function getAllProductHandler(req, res) {
 }
 
 async function productFilterHandler(req, res) {
-   const { categoryId, manufacId, productTypeId, page } = req.query
-   const products = await productFilter(categoryId, manufacId, productTypeId, page)
+   try {
+      const { categoryId, manufacId, productTypeId, page } = req.query
+      const products = await productFilter(categoryId, manufacId, productTypeId, page)
+      return res.status(200).json({
+         code: 'SS',
+         data: products,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
+         err,
+      })
+   }
+}
+
+async function productFilterDashbroadHandler(req, res) {
+   const products = await productFilterDashbroad(req.query.q)
    try {
       return res.status(200).json({
          code: 'SS',
@@ -220,13 +236,30 @@ async function updateProductHandler(req, res) {
    const productColors = req.body.productColors
    const productId = req.query.productId
    const productConfigurationId = req.query.productConfigurationId
-   if (!productId || !productConfigurationId || !categoryId || !manufacId || !productTypeId || !name || !quantity || !price || !productImages) {
+   if (
+      !productId ||
+      !productConfigurationId ||
+      !categoryId ||
+      !manufacId ||
+      !productTypeId ||
+      !name ||
+      !quantity ||
+      !price ||
+      !productImages
+   ) {
       return res.status(400).json({
          code: 'ER',
          mesage: 'Missing data',
       })
    }
-   await updateProduct(productId, productImages, productInfo, productConfigurationId, productConfiguration, productColors)
+   await updateProduct(
+      productId,
+      productImages,
+      productInfo,
+      productConfigurationId,
+      productConfiguration,
+      productColors,
+   )
    try {
       return res.status(200).json({
          code: 'SS',
@@ -242,7 +275,7 @@ async function updateProductHandler(req, res) {
 }
 
 async function deleteProductHandler(req, res) {
-   const productId = req.params.productId
+   const { productId, productConfigurationId } = req.query
    if (!productId) {
       return res.status(400).json({
          code: 'ER',
@@ -251,7 +284,7 @@ async function deleteProductHandler(req, res) {
    }
 
    try {
-      await deleteProduct(productId)
+      await deleteProduct(productId, productConfigurationId)
       return res.status(200).json({
          code: 'SS',
          mesage: 'Delete successfully',
@@ -276,4 +309,5 @@ module.exports = {
    editProductWidthoutConfig,
    updateProductHandler,
    deleteProductHandler,
+   productFilterDashbroadHandler,
 }

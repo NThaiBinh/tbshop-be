@@ -13,6 +13,6 @@ employeesRouter.get('/', getAllEmployeeHandler)
 employeesRouter.post('/create', upload.single('image'), createEmployeeHandler)
 employeesRouter.get('/edit/:employeeId', editEmployeeHandler)
 employeesRouter.put('/update/:employeeId', upload.single('image'), updateEmployeeHandler)
-employeesRouter.delete('/delete/:employeeId', deleteEmployeeHandler)
+employeesRouter.delete('/delete', deleteEmployeeHandler)
 
 module.exports = employeesRouter

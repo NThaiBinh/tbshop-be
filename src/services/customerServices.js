@@ -123,7 +123,7 @@ async function getCustomerById(customerId) {
             .query(`SELECT * FROM KHACHHANG WHERE MaKH = @customerId`)
       })
       .then((customer) => customer.recordset[0])
-   const customerRoles = await getRoleByAccountId(customerInfo.MATK)
+   const customerRoles = await getRoleByAccountId(customerInfo?.MATK)
    return {
       ...customerInfo,
       roles: customerRoles.map((customerRole) => customerRole.MAVAITRO),

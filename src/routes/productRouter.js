@@ -12,10 +12,12 @@ const {
    deleteProductHandler,
    getProductDetailsHandler,
    productFilterHandler,
+   productFilterDashbroadHandler,
 } = require('../controllers/productController')
 
 productRouter.get('/', getAllProductHandler)
 productRouter.get('/filter', productFilterHandler)
+productRouter.get('/filter-dashbroad', productFilterDashbroadHandler)
 productRouter.get('/edit', editProductHandler)
 productRouter.get('/details', getProductDetailsHandler)
 productRouter.get('/:categoryId', getAllProductByCategoryHandler)
@@ -23,6 +25,6 @@ productRouter.post('/create', upload.array('productImages'), createProductHandle
 productRouter.post('/create-product-configuration/:productId', createProductConfigurationHandler)
 productRouter.get('/edit-widthout-config/:productId', editProductWidthoutConfig)
 productRouter.put('/update', upload.array('productImages'), updateProductHandler)
-productRouter.delete('/delete/:productId', deleteProductHandler)
+productRouter.delete('/delete', deleteProductHandler)
 
 module.exports = productRouter

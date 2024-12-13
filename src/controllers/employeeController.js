@@ -1,4 +1,5 @@
 const { getAllEmployees, createEmployee, updateEmployee, deleteEmployee, getEmployeeInfoById } = require('../services/employeeServices')
+const { setNullFieldEmty } = require('../utils/lib')
 
 async function getAllEmployeeHandler(req, res) {
    try {
@@ -70,7 +71,7 @@ async function editEmployeeHandler(req, res) {
 async function updateEmployeeHandler(req, res) {
    const image = req.file
    const employeeId = req.params.employeeId
-   const { positionId, name, birdth, address, phoneNumber, email } = req.body
+   const { positionId, name, birth, address, phoneNumber, email } = setNullFieldEmty(req.body)
    if (!positionId || !name || !phoneNumber || !email) {
       return res.status(400).json({
          code: 'ER',
@@ -78,11 +79,11 @@ async function updateEmployeeHandler(req, res) {
       })
    }
 
-   await updateEmployee({ employeeId, image: image?.filename, ...req.body })
    try {
+      await updateEmployee({ employeeId, image: image?.filename, ...req.body })
       return res.status(200).json({
          code: 'SS',
-         message: 'Create successfully',
+         message: 'Update successfully',
       })
    } catch (err) {
       return res.status(500).json({
@@ -94,9 +95,9 @@ async function updateEmployeeHandler(req, res) {
 }
 
 async function deleteEmployeeHandler(req, res) {
-   const employeeId = req.params.employeeId
-   await deleteEmployee(employeeId)
+   const { employeeId, accountId } = req.query
    try {
+      await deleteEmployee(employeeId, accountId)
       return res.status(200).json({
          code: 'SS',
          message: 'Delete successfully',

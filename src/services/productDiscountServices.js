@@ -9,10 +9,12 @@ async function getAllProductDiscounts(page) {
       const skip = (parseInt(page) - 1) * PAGE_SIZE
       return await connectionPool
          .then((pool) => {
-            return pool.request().query(`SELECT * FROM KHUYENMAI
-                        ORDER BY NgayTao
-                        OFFSET ${skip} ROWS
-                        FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
+            return pool.request().query(`
+               SELECT MAKM, KHUYENMAI.MASP, TENSP, TENKM, ANHKM, GIAKM, NGAYBATDAU, NGAYKETTHUC, KHUYENMAI.NGAYTAO, KHUYENMAI.NGAYCAPNHAT 
+               FROM KHUYENMAI INNER JOIN SANPHAM ON KHUYENMAI.MASP = SANPHAM.MASP
+               ORDER BY KHUYENMAI.NGAYTAO
+               OFFSET ${skip} ROWS
+               FETCH NEXT ${PAGE_SIZE} ROWS ONLY`)
          })
          .then((productDiscounts) => productDiscounts.recordset)
    }
@@ -26,9 +28,7 @@ async function getAllProductDiscounts(page) {
 async function getAllProductDiscountsValid() {
    return await connectionPool
       .then((pool) => {
-         return pool
-            .request()
-            .query(`SELECT * FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`)
+         return pool.request().query(`SELECT * FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`)
       })
       .then((productDiscounts) => productDiscounts.recordset)
 }
@@ -39,9 +39,7 @@ async function getAllProductDiscountsValidByProductId(productId) {
          return pool
             .request()
             .input('productId', sql.TYPES.VarChar, productId)
-            .query(
-               `SELECT * FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC AND MASP = @productId`,
-            )
+            .query(`SELECT * FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC AND MASP = @productId`)
       })
       .then((productDiscounts) => productDiscounts.recordset)
 }
@@ -49,9 +47,7 @@ async function getAllProductDiscountsValidByProductId(productId) {
 async function getAllProductDiscountPanelsValid() {
    return await connectionPool
       .then((pool) => {
-         return pool
-            .request()
-            .query(`SELECT ANHKM FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`)
+         return pool.request().query(`SELECT ANHKM FROM KHUYENMAI WHERE DATEADD(HOUR, 7, GETDATE()) BETWEEN NGAYBATDAU AND NGAYKETTHUC`)
       })
       .then((productDiscounts) => productDiscounts.recordset)
 }
@@ -89,9 +85,7 @@ function calculateProductDiscount(productPrice, discounts = []) {
    let discountPrice = productPrice
    discounts.forEach((discount) => {
       if (`${discount.GIAKM}`.includes('%')) {
-         discountPrice =
-            discountPrice -
-            (discountPrice * parseFloat(`${discount.GIAKM}`.slice(0, `${discount.GIAKM}`.length - 1))) / 100
+         discountPrice = discountPrice - (discountPrice * parseFloat(`${discount.GIAKM}`.slice(0, `${discount.GIAKM}`.length - 1))) / 100
       } else {
          discountPrice -= parseFloat(discount.GIAKM)
       }
