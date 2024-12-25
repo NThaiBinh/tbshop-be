@@ -59,7 +59,7 @@ async function editProductTypeHandler(req, res) {
       if (!productType) {
          return res.status(200).json({
             code: 'NF',
-            meaasge: 'Manufacturer not found',
+            meaasge: 'Product type not found',
          })
       }
       return res.status(200).json({

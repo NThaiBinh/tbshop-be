@@ -25,8 +25,8 @@ async function updateStoreInfoHandler(req, res) {
       })
    }
 
-   await updateStoreInfo({ image: req.file?.filename || null, ...req.body })
    try {
+      await updateStoreInfo({ image: req.file?.filename || null, ...req.body })
       return res.status(200).json({
          code: 'SS',
          message: 'Update successfully',

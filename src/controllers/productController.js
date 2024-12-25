@@ -47,8 +47,8 @@ async function productFilterHandler(req, res) {
 }
 
 async function productFilterDashbroadHandler(req, res) {
-   const products = await productFilterDashbroad(req.query.q)
    try {
+      const products = await productFilterDashbroad(req.query.q)
       return res.status(200).json({
          code: 'SS',
          data: products,
@@ -100,8 +100,8 @@ async function createProductHandler(req, res) {
       })
    }
 
-   await createProduct({ productImages, productInfo, productConfiguration, productColors })
    try {
+      await createProduct({ productImages, productInfo, productConfiguration, productColors })
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',

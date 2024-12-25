@@ -1,4 +1,4 @@
-const { createOrder, getAllOrders, cancelOrder, getSearchResults } = require('../services/orderServices')
+const { createOrder, getAllOrders, cancelOrder } = require('../services/orderServices')
 
 async function getAllOrderHandler(req, res) {
    const orders = await getAllOrders()
@@ -63,27 +63,10 @@ async function confirmOrderHandler(req, res) {
       })
    }
 }
-async function getSearchResultsHandler(req, res) {
-   const { q } = req.query
-
-   try {
-      const searchResults = await getSearchResults(q)
-      return res.status(200).json({
-         code: 'SS',
-         data: searchResults,
-      })
-   } catch (err) {
-      return res.status(500).json({
-         code: 'ER',
-         message: 'Server error',
-      })
-   }
-}
 
 module.exports = {
    getAllOrderHandler,
    createOrderHandler,
    cancelOrderHandler,
    confirmOrderHandler,
-   getSearchResultsHandler,
 }

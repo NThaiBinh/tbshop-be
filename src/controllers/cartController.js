@@ -43,7 +43,16 @@ async function getCartItemsHandler(req, res) {
 }
 
 async function addCartItemHandler(req, res) {
-   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = req.body
+   const {
+      cartId,
+      productId,
+      productConfigurationId,
+      productColorId,
+      quantity,
+      price,
+      totalPrice,
+      productDiscountIds,
+   } = req.body
 
    if (!cartId || !productId || !productConfigurationId || !productColorId || !quantity || !price || !totalPrice) {
       return res.status(400).json({
@@ -68,7 +77,16 @@ async function addCartItemHandler(req, res) {
 }
 
 async function updateCartItemHandler(req, res) {
-   const { cartId, productId, productConfigurationId, productColorId, quantity, price, totalPrice, productDiscountIds } = req.body
+   const {
+      cartId,
+      productId,
+      productConfigurationId,
+      productColorId,
+      quantity,
+      price,
+      totalPrice,
+      productDiscountIds,
+   } = req.body
    if (!cartId || !productId || !productConfigurationId || !productColorId || !price || !totalPrice) {
       return res.status(400).json({
          code: 'ER',

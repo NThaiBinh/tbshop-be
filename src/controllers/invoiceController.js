@@ -6,13 +6,14 @@ const {
    confirmInvoice,
    printInvoice,
    statistical,
+   getSearchResults,
 } = require('../services/invoiceServices')
 const sendMail = require('../services/mailServices')
 
 async function getAllInvoicesHandler(req, res) {
    const { status } = req.query
+   const invoices = await getAllInvoices(status)
    try {
-      const invoices = await getAllInvoices(status)
       return res.status(200).json({
          code: 'SS',
          data: invoices,
@@ -22,6 +23,22 @@ async function getAllInvoicesHandler(req, res) {
          code: 'ER',
          message: 'Server error',
          err,
+      })
+   }
+}
+
+async function getSearchResultsHandler(req, res) {
+   const { q } = req.query
+   try {
+      const searchResults = await getSearchResults(q)
+      return res.status(200).json({
+         code: 'SS',
+         data: searchResults,
+      })
+   } catch (err) {
+      return res.status(500).json({
+         code: 'ER',
+         message: 'Server error',
       })
    }
 }
@@ -114,8 +131,8 @@ async function confirmInvoiceHandler(req, res) {
 
 async function statisticalHandler(req, res) {
    const { startDate, endDate } = req.query
-   const data = await statistical(startDate, endDate)
    try {
+      const data = await statistical(startDate, endDate)
       return res.status(200).json({
          code: 'SS',
          data,
@@ -136,4 +153,5 @@ module.exports = {
    confirmInvoiceHandler,
    printInvoiceHandler,
    statisticalHandler,
+   getSearchResultsHandler,
 }

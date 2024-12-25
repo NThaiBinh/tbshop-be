@@ -18,8 +18,8 @@ async function getAllUserAndRolesHandler(req, res) {
 
 async function updateUserRoleHandler(req, res) {
    const accountId = req.params.accountId
+   await updateUserRole(accountId, req.body.roleInfo)
    try {
-      await updateUserRole(accountId, req.body.roleInfo)
       return res.status(200).json({
          code: 'SS',
          message: 'Update successfully',

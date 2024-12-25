@@ -15,6 +15,7 @@ const { createPosition } = require('../services/positionServices')
 const { getAccountByUserName, createAdminAccount } = require('../services/authServices')
 const { getAllCategories, createCategory } = require('../services/categoryServices')
 const { getStoreInfo, createStoreInfo } = require('../services/storeInfoServices')
+const { GetDate } = require('../utils/lib')
 
 function serverConfigs(app) {
    app.use(express.static(path.join(__dirname, '../public')))
@@ -61,7 +62,7 @@ async function checkAdminAccount() {
          positionId,
          name: 'ADMIN',
          image: 'default-avatar.jpg',
-         birth: null,
+         birth: GetDate(),
          address: null,
          phoneNumber: '0000000000',
          email: 'admin@gmail.com',

@@ -7,9 +7,9 @@ const {
 } = require('../services/productDiscountServices')
 
 async function getAllProductDiscountsHandler(req, res) {
+   const page = req.query.page
+   const productDiscounts = await getAllProductDiscounts(page)
    try {
-      const page = req.query.page
-      const productDiscounts = await getAllProductDiscounts(page)
       return res.status(200).json({
          code: 'SS',
          data: productDiscounts,
@@ -82,8 +82,8 @@ async function createProductDiscountHandler(req, res) {
       })
    }
 
-   await createProductDiscount(req.file, req.body)
    try {
+      await createProductDiscount(req.file, req.body)
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',

@@ -1,7 +1,7 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const connectionPool = require('../config/dbConfig')
+const { connectionPool } = require('../config/dbConfig')
 const sql = require('mssql')
 const { createEmployee, getEmployeeAndRolesByAccountId } = require('./employeeServices')
 const { createCustomer, getCustomerAndRolesByAccountId } = require('./customerServices')

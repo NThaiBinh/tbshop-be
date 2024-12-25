@@ -4,8 +4,8 @@ const { pathToRegexp } = require('path-to-regexp')
 
 function checkWhiteLists(url) {
    const whiteLists = [
-      'customers/login',
-      'customers/register',
+      'auth/login',
+      'auth/register',
       'products',
       'products/edit/:productId',
       'store-info',
@@ -14,6 +14,8 @@ function checkWhiteLists(url) {
       'manufacturers/phone',
       'products/filter',
       'manufacturers/laptop',
+      'products/details',
+      'auth/logout',
    ]
    return whiteLists.find((item) => {
       const regex = pathToRegexp('/api/v1/' + item)

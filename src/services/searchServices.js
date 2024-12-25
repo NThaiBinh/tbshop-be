@@ -1,4 +1,4 @@
-const connectionPool = require('../config/dbConfig')
+const { connectionPool } = require('../config/dbConfig')
 const sql = require('mssql')
 
 async function searchProducts(searchValue) {
