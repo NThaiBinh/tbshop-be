@@ -12,7 +12,6 @@ async function searchProductsHandler(req, res) {
       return res.status(500).json({
          code: 'ER',
          message: 'Server error',
-         err,
       })
    }
 }

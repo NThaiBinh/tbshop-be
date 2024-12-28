@@ -15,7 +15,8 @@ async function getPositionBtId(positionId) {
    //    .then((position) => position.recordset[0])
    const params = [{ name: 'positionId', type: sql.TYPES.VarChar, value: positionId }]
    const query = `SELECT * FROM CHUCVU WHERE MaCV = @positionId`
-   return await executeQuery(query, params)
+   const results = await executeQuery(query, params)
+   return results[0]
 }
 
 async function getAllPositions() {

@@ -8,8 +8,8 @@ async function registerHandler(req, res) {
          message: 'Missing data',
       })
    }
-   await register(req.body)
    try {
+      await register(req.body)
       return res.status(200).json({
          code: 'SS',
          mesage: 'Create successfully',

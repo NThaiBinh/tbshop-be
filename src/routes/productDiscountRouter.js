@@ -14,8 +14,5 @@ productDiscountRouter.get('/valid/all', getAllProductDiscountsValidHandler)
 productDiscountRouter.get('/posters', getAllProductDiscountPanelsValidHandler)
 productDiscountRouter.get('/valid/', getAllProductDiscountsValidByProductIdHandler)
 productDiscountRouter.post('/create', upload.single('posterDiscount'), createProductDiscountHandler)
-// productDiscountRouter.get('/edit/:manufacId', editManufacHandler)
-// productDiscountRouter.put('/update/:manufacId', updateManufacHandler)
-// productDiscountRouter.delete('/delete/:manufacId', deleteManufacHandler)
 
 module.exports = productDiscountRouter
