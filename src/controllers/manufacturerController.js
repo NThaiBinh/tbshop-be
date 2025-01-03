@@ -55,7 +55,7 @@ async function createManufacHandler(req, res) {
 
    try {
       const customer = await getManufacByEmail(email)
-      if (customer && customer.EMAILKH !== email) {
+      if (customer) {
          return res.status(409).json({
             code: 'EX',
             message: 'Manufac already exits',

@@ -36,8 +36,8 @@ async function createImagesProduct(productImages = [], productId) {
       ]
       const query = `
          INSERT INTO ANHSANPHAM (${columns}) VALUES (
-            @imageId, 
-            @productId, 
+            @imageId,
+            @productId,
             @image,
             @createdAt,
             @updatedAt)`

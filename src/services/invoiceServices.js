@@ -536,8 +536,8 @@ async function printInvoice(invoiceId) {
       WHERE
          MACDINH = 'True' AND MAHD = @invoiceId`
    const results = await executeQuery(query, params)
-   const discountList = results[0]?.DANHSACHKHUYENMAI ? JSON.parse(results[0]?.DANHSACHKHUYENMAI) : []
-   const productList = results[0]?.DANHSACHSANPHAM ? JSON.parse(results[0]?.DANHSACHSANPHAM) : []
+   const discountList = results[0].DANHSACHKHUYENMAI ? JSON.parse(results[0].DANHSACHKHUYENMAI) : []
+   const productList = results[0].DANHSACHSANPHAM ? JSON.parse(results[0].DANHSACHSANPHAM) : []
    return {
       ...results[0],
       DANHSACHKHUYENMAI: discountList,

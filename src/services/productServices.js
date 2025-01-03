@@ -312,15 +312,16 @@ async function createProduct({ productImages, productInfo, productConfiguration,
          .input('quantity', sql.TYPES.Int, quantity)
          .input('createdAt', sql.TYPES.DateTimeOffset, createdAt)
          .input('updatedAt', sql.TYPES.DateTimeOffset, updatedAt).query(`INSERT INTO SANPHAM (${columns}) VALUES (
-            @productId, 
-            @categoryId, 
-            @manufacId, 
+            @productId,
+            @categoryId,
+            @manufacId,
             @productTypeId,
-            @name,  
+            @name,
             @quantity,
             @createdAt,
             @updatedAt)`)
    })
+
    await createImagesProduct(productImages, productId)
    await createProductPrice(price, productId)
    const productConfigurationId = await createProductConfiguration(productConfiguration, productId)
